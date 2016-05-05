@@ -81,6 +81,10 @@ function paystack_link($params)
     $invoiceId = $params['invoiceid'];
     $amountinkobo = intval(floatval($params['amount'])*100);
     $currency = $params['currency'];
+    
+    if(!(strtoupper($currency) == 'NGN')){
+        die("Paystack only accepts NGN payments for now");
+    }
 
     // Client
     $email = $params['clientdetails']['email'];

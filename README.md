@@ -9,21 +9,17 @@ A plugin that allows WHMCS users accept payments using Paystack
 - PHP (5.5.19 or more recent) and extensions, MySQL and web browser
 - cURL (7.34.0 or more recent)
 - OpenSSL v1.0.1 or more recent
-- For further details of PHP compatibility, MySQL, supported Web servers and other 
-requirements,refer to the WHMCS website:[Magento Requirements][link-magento-requirements]
 
 ## Prepare
 
 - Before you can start taking payments through Paystack, you will first need to sign up at: 
 [https://dashboard.paystack.co/#/signup][link-signup]. To receive live payments, you should request a Go-live after
 you are done with configuration and have successfully made a test payment.
-- Either: Download a release version from the [releases page][link-releases]
-- OR: Locate this plugin on [Magento Connect][link-magento-connect] and copy the extension key.
 
 ## Install
-1. Copy [paystack.php](modules/gateways/paystack.php) in [modules/gateways](modules/gateways) to the /modules/gateways/ folder of your WHMCS installation.
+1. Copy [paystack.php](modules/gateways/paystack.php) in [modules/gateways](modules/gateways) to the `/modules/gateways/` folder of your WHMCS installation.
 
-2. Copy [paystack.php](modules/gateways/callback/paystack.php) in [modules/gateways/callback](modules/gateways/callback) to the /modules/gateways/callback folder of your WHMCS installation.
+2. Copy [paystack.php](modules/gateways/callback/paystack.php) in [modules/gateways/callback](modules/gateways/callback) to the `/modules/gateways/callback` folder of your WHMCS installation.
 
 ## I'm ready!
 
@@ -47,7 +43,6 @@ If you discover any security related issues, please email `support@paystack.com`
 
 ## Credits
 
-- [Paystack Support][link-author]
 - [Ibrahim Lawal][link-author2]
 - [All Contributors][link-contributors]
 
