@@ -1,0 +1,28 @@
+{
+    "name": "paystack/paystack-whmcs",
+    "description": "Paystack WHMCS Gateway",
+    "keywords": [
+        "whmcs",
+        "web host automation platform",
+        "third party gateway module",
+        "gateway module",
+        "third party gateway",
+        "paystack",
+        "paystack payment",
+        "paystack payment gateway",
+        "paystack gateway"
+    ],
+    "homepage": "https://www.paystack.com/",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Paystack Development Team",
+            "email": "support@paystack.com",
+            "homepage": "https://www.paystack.com/",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "support@paystack.com"
+    }
+}

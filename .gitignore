@@ -1,0 +1,12 @@
+# IDEs
+.project
+.pydevproject
+.idea
+.settings
+
+# Random files
+*~
+\#*
+
+# test folder
+/test
