@@ -83,7 +83,7 @@ function paystack_link($params)
     $currency = $params['currency'];
     
     if(!(strtoupper($currency) == 'NGN')){
-        die("Paystack only accepts NGN payments for now");
+        return ("Paystack only accepts NGN payments for now.");
     }
 
     // Client
