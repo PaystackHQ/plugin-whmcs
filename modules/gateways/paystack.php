@@ -102,7 +102,7 @@ function paystack_link($params)
         <script src="https://js.paystack.co/v1/inline.js"></script>
         <script>
         // load jQuery 1.12.3 if not loaded
-        !window.jQuery && document.write("<scr" + "ipt type="text/javascript" src="https://code.jquery.com/jquery-1.12.3.min.js"></scr" + "ipt>");
+        !window.jQuery && document.write("<scr" + "ipt type=\"text\/javascript\" src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
         $(function() {
             var paymentMethod = $(\'select[name="gateway"]\').val();
             if (paymentMethod === \'paystack\') {
