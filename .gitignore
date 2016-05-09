@@ -10,3 +10,6 @@
 
 # test folder
 /test
+
+# bower
+/bower_components
