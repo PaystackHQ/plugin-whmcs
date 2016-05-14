@@ -29,7 +29,7 @@ if (!$gatewayParams['type']) {
 }
 
 // Retrieve data returned in payment gateway callback
-$invoiceId = filter_input(INPUT_GET, "invoiceId");
+$invoiceId = filter_input(INPUT_GET, "invoiceid");
 $trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {

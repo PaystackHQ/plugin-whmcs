@@ -157,7 +157,7 @@ function paystack_link($params)
     }
 
     $code = '
-    <form action="'.$txStatus->authorization_url.'" onsubmit="payWithPaystack();">
+    <form action="'.$txStatus->authorization_url.'" '.($txStatus->authorization_url?'':'onsubmit="payWithPaystack();"').'>
         <script src="https://js.paystack.co/v1/inline.js"></script>
         <input type="button" value="Pay Now" onclick="payWithPaystack()" />
         <script>
