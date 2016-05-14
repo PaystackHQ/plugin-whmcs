@@ -27,7 +27,7 @@ function paystack_config()
     return array(
         'FriendlyName' => array(
             'Type' => 'System',
-            'Value' => 'Credit/Debit Cards'
+            'Value' => 'Credit/Debit Cards (Powered by Paystack)'
         ),
         'gatewayLogs' => array(
             'FriendlyName' => 'Gateway logs',
@@ -77,15 +77,6 @@ function paystack_config()
  */
 function paystack_link($params)
 {
-    // Invoice
-    $invoiceId = $params['invoiceid'];
-    $amountinkobo = intval(floatval($params['amount'])*100);
-    $currency = $params['currency'];
-    
-    if(!(strtoupper($currency) == 'NGN')){
-        return ("Paystack only accepts NGN payments for now.");
-    }
-
     // Client
     $email = $params['clientdetails']['email'];
     $phone = $params['clientdetails']['phonenumber'];
@@ -93,16 +84,87 @@ function paystack_link($params)
     // Config Options
     if ($params['testMode'] == 'on') {
         $publicKey = $params['testPublicKey'];
+        $secretKey = $params['testSecretKey'];
     } else {
         $publicKey = $params['livePublicKey'];
+        $secretKey = $params['liveSecretKey'];
+    }    
+    
+    // check if there is an id in the GET meaning the invoice was loaded directly
+    $paynowload = (!array_key_exists('id', $_GET) && ('complete'===filter_input(INPUT_GET, 'a')));
+    
+    // Invoice
+    $invoiceId = $params['invoiceid'];
+    $amountinkobo = intval(floatval($params['amount'])*100);
+    $currency = $params['currency'];
+
+    $txStatus = new stdClass();
+    if($paynowload){
+        $ch = curl_init();
+
+        $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
+        
+        $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . 
+            substr($_SERVER['REQUEST_URI'], 0, strrpos ( $_SERVER['REQUEST_URI'] , '/' )) . 
+            '/modules/gateways/callback/paystack.php?invoiceid='.
+            rawurlencode($invoiceId);
+
+        // set url
+        curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/initialize/");
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: Bearer '. trim($secretKey)
+        ));
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(array(
+            "amount"=>$amountinkobo,
+            "email"=>$email,
+            "phone"=>$phone,
+            "callback_url"=>$callback_url
+        )) );
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_SSLVERSION, 6);
+    
+        // exec the cURL
+        $response = curl_exec($ch);
+    
+        // should be 0
+        if (curl_errno($ch)) {
+            // curl ended with an error
+            $txStatus->error = "cURL said:" . curl_error($ch);
+            curl_close($ch);
+        } else {
+            //close connection
+            curl_close($ch);
+
+            // Then, after your curl_exec call:
+            $body = json_decode($response);
+            if (!$body->status) {
+                // paystack has an error message for us
+                $txStatus->error = "Paystack API said: " . $body->message;
+            } else {
+                // get body returned by Paystack API
+                $txStatus = $body->data;
+            }
+        }
+
+    }
+    
+    if(!(strtoupper($currency) == 'NGN')){
+        return ("Paystack only accepts NGN payments for now.");
     }
 
     $code = '
-    <form >
+    <form action="'.$txStatus->authorization_url.'" onsubmit="payWithPaystack();">
         <script src="https://js.paystack.co/v1/inline.js"></script>
+        <input type="button" value="Pay Now" onclick="payWithPaystack()" />
         <script>
         // load jQuery 1.12.3 if not loaded
-        !window.jQuery && document.write("<scr" + "ipt type=\"text\/javascript\" src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
+        (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
+        </script>
+        <script>
         $(function() {
             var paymentMethod = $(\'select[name="gateway"]\').val();
             if (paymentMethod === \'paystack\') {
@@ -122,28 +184,14 @@ function paystack_link($params)
               callback: function(response){
                 var url = document.URL;
                 url = url.substring(0, url.lastIndexOf(\'/\') + 1);
-
-                $.ajax({
-                    method: \'POST\',
-                    url: url + \'modules/gateways/callback/paystack.php\',
-                    data: {
-                        invoiceId: \''.$invoiceId.'\',
-                        trxref: response.trxref
-                    }
-                }).success(function (data) {
-                    if (data === \'success\') {
-                        location.reload();
-                    } else {
-                        console.log(data);
-                    }
-                });
+                window.location.href = url + \'modules/gateways/callback/paystack.php?trxref=\'+response.trxref+\'&invoiceid=\' + \''.$invoiceId.'\';
               },
               onClose: function(){
-                  alert(\'window closed\');
+                  alert(\'Payment Canceled. Click on the "Pay" button to try again.\');
               }
             });
             handler.openIframe();
-        }
+       }
     </script>';
 
     return $code;

@@ -29,8 +29,8 @@ if (!$gatewayParams['type']) {
 }
 
 // Retrieve data returned in payment gateway callback
-$invoiceId = filter_input(INPUT_POST, "invoiceid");
-$trxref = filter_input(INPUT_POST, "trxref");
+$invoiceId = filter_input(INPUT_GET, "invoiceId");
+$trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {
     $secretKey = $gatewayParams['testSecretKey'];
@@ -107,10 +107,11 @@ if ($success) {
      */
     addInvoicePayment($invoiceId, $trxref, floatval($txStatus->amount)/100, 0, $gatewayModuleName);
 
-    exit('success');
+    // load invoice
+    echo 'Paid. load invoice.';
+} else {
+    die($txStatus->error);
 }
-
-exit('error');
 
 function verifyTransaction($trxref, $secretKey)
 {
