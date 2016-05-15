@@ -1,16 +1,18 @@
 <?php
-// *************************************************************************
-// *                                                                       *
-// * Paystack Payment Gateway                                                *
-// * Version: 1.0.4                                                        *
-// * Build Date: 9 Mar 2016                                                *
-// *                                                                       *
-// *************************************************************************
-// *                                                                       *
-// * Email: support@paystack.com                                           *
-// * Website: https://www.paystack.com                                      *
-// *                                                                       *
-// *************************************************************************
+/**
+/ ********************************************************************* \
+ *                                                                      *
+ *   Paystack Payment Gateway                                           *
+ *   Version: 1.0.0                                                     *
+ *   Build Date: 15 May 2016                                            *
+ *                                                                      *
+ ************************************************************************
+ *                                                                      *
+ *   Email: support@paystack.com                                        *
+ *   Website: https://www.paystack.com                                  *
+ *                                                                      *
+\ ********************************************************************* /
+**/
 
 // Require libraries needed for gateway module functions.
 require_once __DIR__ . '/../../../init.php';
@@ -108,7 +110,14 @@ if ($success) {
     addInvoicePayment($invoiceId, $trxref, floatval($txStatus->amount)/100, 0, $gatewayModuleName);
 
     // load invoice
-    echo 'Paid. load invoice.';
+    $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
+        
+    $invoice_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+        substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
+        '/../../../viewinvoice.php?id='.
+        rawurlencode($invoiceId);
+
+    header('Location: '.$invoice_url);
 } else {
     die($txStatus->error);
 }
@@ -121,9 +130,13 @@ function verifyTransaction($trxref, $secretKey)
     // set url
     curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . rawurlencode($trxref));
 
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    curl_setopt(
+        $ch,
+        CURLOPT_HTTPHEADER,
+        array(
         'Authorization: Bearer '. trim($secretKey)
-    ));
+        )
+    );
 
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_HEADER, false);

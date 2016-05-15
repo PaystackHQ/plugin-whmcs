@@ -1,17 +1,18 @@
 <?php
-// *************************************************************************
-// *                                                                       *
-// * Paystack Payment Gateway                                              *
-// * Copyright 2016 Paystack Ltd. All rights reserved.                     *
-// * Version: 1.0.4                                                        *
-// * Build Date: 9 Mar 2016                                                *
-// *                                                                       *
-// *************************************************************************
-// *                                                                       *
-// * Email: support@paystack.com                                           *
-// * Website: https://www.paystack.com                                     *
-// *                                                                       *
-// *************************************************************************
+/**
+ ** ***************************************************************** **\
+ *                                                                      *
+ *   Paystack Payment Gateway                                           *
+ *   Version: 1.0.0                                                     *
+ *   Build Date: 15 May 2016                                            *
+ *                                                                      *
+ ************************************************************************
+ *                                                                      *
+ *   Email: support@paystack.com                                        *
+ *   Website: https://www.paystack.com                                  *
+ *                                                                      *
+\
+************************************************************************/
 
 if (!defined("WHMCS")) {
     die("<!-- Silence. SHHHHH!!!! -->");
@@ -88,7 +89,7 @@ function paystack_link($params)
     } else {
         $publicKey = $params['livePublicKey'];
         $secretKey = $params['liveSecretKey'];
-    }    
+    }
     
     // check if there is an id in the GET meaning the invoice was loaded directly
     $paynowload = (!array_key_exists('id', $_GET) && ('complete'===filter_input(INPUT_GET, 'a')));
@@ -99,31 +100,41 @@ function paystack_link($params)
     $currency = $params['currency'];
 
     $txStatus = new stdClass();
-    if($paynowload){
+    if ($paynowload) {
         $ch = curl_init();
 
         $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
         
-        $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . 
-            substr($_SERVER['REQUEST_URI'], 0, strrpos ( $_SERVER['REQUEST_URI'] , '/' )) . 
+        $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+            substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
             '/modules/gateways/callback/paystack.php?invoiceid='.
             rawurlencode($invoiceId);
 
         // set url
         curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/initialize/");
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        curl_setopt(
+            $ch,
+            CURLOPT_HTTPHEADER,
+            array(
             'Authorization: Bearer '. trim($secretKey)
-        ));
+            )
+        );
 
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(array(
-            "amount"=>$amountinkobo,
-            "email"=>$email,
-            "phone"=>$phone,
-            "callback_url"=>$callback_url
-        )) );
+        curl_setopt(
+            $ch,
+            CURLOPT_POSTFIELDS,
+            http_build_query(
+                array(
+                "amount"=>$amountinkobo,
+                "email"=>$email,
+                "phone"=>$phone,
+                "callback_url"=>$callback_url
+                )
+            )
+        );
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_SSLVERSION, 6);
     
@@ -149,26 +160,28 @@ function paystack_link($params)
                 $txStatus = $body->data;
             }
         }
-
     }
     
-    if(!(strtoupper($currency) == 'NGN')){
+    if (!(strtoupper($currency) == 'NGN')) {
         return ("Paystack only accepts NGN payments for now.");
     }
 
     $code = '
-    <form action="'.$txStatus->authorization_url.'" '.($txStatus->authorization_url?'':'onsubmit="payWithPaystack();"').'>
+    <form action="'.$txStatus->authorization_url.'" '.
+        ($txStatus->authorization_url ? '' : 'onsubmit="payWithPaystack();"' ).'>
         <script src="https://js.paystack.co/v1/inline.js"></script>
         <input type="button" value="Pay Now" onclick="payWithPaystack()" />
         <script>
         // load jQuery 1.12.3 if not loaded
-        (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
+        (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" 
+        src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
         </script>
         <script>
         $(function() {
             var paymentMethod = $(\'select[name="gateway"]\').val();
             if (paymentMethod === \'paystack\') {
-                $(\'.payment-btn-container\').append(\'<button type="button" onclick="payWithPaystack()"> Pay with Paystack</button>\');
+                $(\'.payment-btn-container\').append(\'<button type="button" 
+                onclick="payWithPaystack()"> Pay with Paystack</button>\');
             }
         });
         </script>
@@ -184,7 +197,8 @@ function paystack_link($params)
               callback: function(response){
                 var url = document.URL;
                 url = url.substring(0, url.lastIndexOf(\'/\') + 1);
-                window.location.href = url + \'modules/gateways/callback/paystack.php?trxref=\'+response.trxref+\'&invoiceid=\' + \''.$invoiceId.'\';
+                window.location.href = url + \'modules/gateways/callback/paystack.php?trxref=\'+
+                        response.trxref+\'&invoiceid=\' + \''.$invoiceId.'\';
               },
               onClose: function(){
                   alert(\'Payment Canceled. Click on the "Pay" button to try again.\');
