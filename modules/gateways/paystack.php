@@ -92,7 +92,7 @@ function paystack_link($params)
     }
     
     // check if there is an id in the GET meaning the invoice was loaded directly
-    $paynowload = (!array_key_exists('id', $_GET) && ('complete'===filter_input(INPUT_GET, 'a')));
+    $paynowload = ( !array_key_exists('id', $_GET) );
     
     // Invoice
     $invoiceId = $params['invoiceid'];
