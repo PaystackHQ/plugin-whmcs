@@ -166,6 +166,10 @@ function paystack_link($params)
         return ("Paystack only accepts NGN payments for now.");
     }
 
+    if($paynowload && $txStatus->error){
+        die($txStatus->error);
+    }
+
     $code = '
     <form action="'.$txStatus->authorization_url.'" '.
         ($txStatus->authorization_url ? '' : 'onsubmit="payWithPaystack();"' ).'>
@@ -173,15 +177,15 @@ function paystack_link($params)
         <input type="button" value="Pay Now" onclick="payWithPaystack()" />
         <script>
         // load jQuery 1.12.3 if not loaded
-        (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" 
-        src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
+        (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" '.
+        'src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
         </script>
         <script>
         $(function() {
             var paymentMethod = $(\'select[name="gateway"]\').val();
             if (paymentMethod === \'paystack\') {
-                $(\'.payment-btn-container\').append(\'<button type="button" 
-                onclick="payWithPaystack()"> Pay with Paystack</button>\');
+                $(\'.payment-btn-container\').append(\'<button type="button"'. 
+               ' onclick="payWithPaystack()"> Pay with Paystack</button>\');
             }
         });
         </script>
