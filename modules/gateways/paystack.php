@@ -99,117 +99,75 @@ function paystack_link($params)
     $amountinkobo = intval(floatval($params['amount'])*100);
     $currency = $params['currency'];
 
-    $txStatus = new stdClass();
-    if ($paynowload) {
-        $ch = curl_init();
-
-        $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
-        
-        $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
-            substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
-            '/modules/gateways/callback/paystack.php?invoiceid='.
-            rawurlencode($invoiceId);
-
-        // set url
-        curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/initialize/");
-
-        curl_setopt(
-            $ch,
-            CURLOPT_HTTPHEADER,
-            array(
-            'Authorization: Bearer '. trim($secretKey)
-            )
-        );
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt(
-            $ch,
-            CURLOPT_POSTFIELDS,
-            http_build_query(
-                array(
-                "amount"=>$amountinkobo,
-                "email"=>$email,
-                "phone"=>$phone,
-                "callback_url"=>$callback_url
-                )
-            )
-        );
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_SSLVERSION, 6);
-    
-        // exec the cURL
-        $response = curl_exec($ch);
-    
-        // should be 0
-        if (curl_errno($ch)) {
-            // curl ended with an error
-            $txStatus->error = "cURL said:" . curl_error($ch);
-            curl_close($ch);
-        } else {
-            //close connection
-            curl_close($ch);
-
-            // Then, after your curl_exec call:
-            $body = json_decode($response);
-            if (!$body->status) {
-                // paystack has an error message for us
-                $txStatus->error = "Paystack API said: " . $body->message;
-            } else {
-                // get body returned by Paystack API
-                $txStatus = $body->data;
-            }
-        }
-    }
-    
     if (!(strtoupper($currency) == 'NGN')) {
         return ("Paystack only accepts NGN payments for now.");
     }
-
-    if($paynowload && $txStatus->error){
-        die($txStatus->error);
-    }
+    
+    $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
+    $fallbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+        substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
+        '/modules/gateways/callback/paystack.php?' . 
+        http_build_query(array(
+            'invoiceid'=>$invoiceId,
+            'email'=>$email,
+            'phone'=>$phone,
+            'amountinkobo'=>$amountinkobo,
+            'go'=>'standard'
+        ));
+    $callbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+        substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
+        '/modules/gateways/callback/paystack.php?' . 
+        http_build_query(array(
+            'invoiceid'=>$invoiceId
+        ));
 
     $code = '
-    <form action="'.$txStatus->authorization_url.'" '.
-        ($txStatus->authorization_url ? '' : 'onsubmit="payWithPaystack();"' ).'>
+    <form target="hiddenIFrame">
         <script src="https://js.paystack.co/v1/inline.js"></script>
-        <input type="button" value="Pay Now" onclick="payWithPaystack()" />
         <script>
-        // load jQuery 1.12.3 if not loaded
-        (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" '.
-        'src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
+            // load jQuery 1.12.3 if not loaded
+            (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" '.
+            'src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
         </script>
         <script>
-        $(function() {
-            var paymentMethod = $(\'select[name="gateway"]\').val();
-            if (paymentMethod === \'paystack\') {
-                $(\'.payment-btn-container\').append(\'<button type="button"'. 
-               ' onclick="payWithPaystack()"> Pay with Paystack</button>\');
-            }
-        });
+            $(function() {
+                var paymentMethod = $(\'select[name="gateway"]\').val();
+                if (paymentMethod === \'paystack\') {
+                    $(\'.payment-btn-container\').append(\'<button type="button"'. 
+                   ' onclick="payWithPaystack()"> Pay with ATM Card</button>\');
+                }
+            });
         </script>
     </form>
-
+    <div class="hidden" style="display:none"><iframe name="hiddenIFrame"></iframe></div>
     <script>
+        var paystackIframeOpened = false;
+        var paystackHandler = PaystackPop.setup({
+          key: \''.addslashes(trim($publicKey)).'\',
+          email: \''.addslashes(trim($email)).'\',
+          phone: \''.addslashes(trim($phone)).'\',
+          amount: '.$amountinkobo.',
+          callback: function(response){
+            window.location.href = \''.addslashes($callbackUrl).'\';
+          },
+          onClose: function(){
+              paystackIframeOpened = false;
+              alert(\'Payment Cancelled. Click on the "Pay" button to try again.\');
+          }
+        });
         function payWithPaystack(){
-            var handler = PaystackPop.setup({
-              key: \''.addslashes(trim($publicKey)).'\',
-              email: \''.addslashes(trim($email)).'\',
-              phone: \''.addslashes(trim($phone)).'\',
-              amount: '.$amountinkobo.',
-              callback: function(response){
-                var url = document.URL;
-                url = url.substring(0, url.lastIndexOf(\'/\') + 1);
-                window.location.href = url + \'modules/gateways/callback/paystack.php?trxref=\'+
-                        response.trxref+\'&invoiceid=\' + \''.$invoiceId.'\';
-              },
-              onClose: function(){
-                  alert(\'Payment Canceled. Click on the "Pay" button to try again.\');
-              }
-            });
-            handler.openIframe();
+            If (paystackHandler.fallback || paystackIframeOpened) {
+              // Handle non-support of iframes or
+              // Being able to click PayWithPaystack even though iframe already open
+              window.location.href = \''.addslashes($fallbackUrl).'\';
+            } else {
+              paystackHandler.openIframe();
+              paystackIframeOpened = true;
+              $(\'.payment-btn-container\').append(\'<button type="button"'. 
+                ' onclick="payWithPaystack()">Pay with ATM Card</button>\');
+            }
        }
+       ' . ( $paynowload ? '' : 'setTimeout("payWithPaystack()", 5100);' ) . '
     </script>';
 
     return $code;

@@ -40,22 +40,89 @@ if ($gatewayParams['testMode'] == 'on') {
     $secretKey = $gatewayParams['liveSecretKey'];
 }
 
+
+if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
+    // falling back to standard
+    $ch = curl_init();
+
+    $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
+    
+    $amountinkobo = filter_input(INPUT_GET, 'amountinkobo');
+    $email = filter_input(INPUT_GET, 'email');
+    $phone = filter_input(INPUT_GET, 'phone');
+
+    $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+        $_SERVER['REQUEST_URI'] . '?invoiceid=' . rawurlencode($invoiceId);
+
+    $txStatus = new stdClass();
+
+    // set url
+    curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/initialize/");
+
+    curl_setopt(
+        $ch,
+        CURLOPT_HTTPHEADER,
+        array(
+        'Authorization: Bearer '. trim($secretKey)
+        )
+    );
+
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt(
+        $ch,
+        CURLOPT_POSTFIELDS,
+        http_build_query(
+            array(
+            "amount"=>$amountinkobo,
+            "email"=>$email,
+            "phone"=>$phone,
+            "callback_url"=>$callback_url
+            )
+        )
+    );
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_SSLVERSION, 6);
+
+    // exec the cURL
+    $response = curl_exec($ch);
+
+    // should be 0
+    if (curl_errno($ch)) {
+        // curl ended with an error
+        $txStatus->error = "cURL said:" . curl_error($ch);
+        curl_close($ch);
+    } else {
+        //close connection
+        curl_close($ch);
+
+        // Then, after your curl_exec call:
+        $body = json_decode($response);
+        if (!$body->status) {
+            // paystack has an error message for us
+            $txStatus->error = "Paystack API said: " . $body->message;
+        } else {
+            // get body returned by Paystack API
+            $txStatus = $body->data;
+        }
+    }
+    if(!$txStatus->error){
+        header('Location: ' . $txStatus->authorization_url);
+        die('<meta http-equiv="refresh" content="0;url='.$txStatus->authorization_url.'" />
+        Redirecting to <a href=\''.$txStatus->authorization_url.'\'>'.$txStatus->authorization_url.'</a>...');
+    } else {
+        if ($gatewayParams['gatewayLogs'] == 'on') {
+            $output = "Transaction Initialize failed"
+                . "\r\nReason: {$txStatus->error}";
+            logTransaction($gatewayModuleName, $output, "Unsuccessful");
+        }
+        die($txStatus->error);
+    }
+}
 /**
  * Verify Paystack transaction.
  */
 $txStatus = verifyTransaction($trxref, $secretKey);
-
-if ($txStatus) {
-    $success = true;
-} else {
-    if ($gatewayParams['gatewayLogs'] == 'on') {
-        $output = "Transaction ID: " . $jsonResponse['customer_reference']
-            . "\r\nInvoice ID: " . $invoiceId
-            . "\r\nStatus: failed";
-        logTransaction($gatewayModuleName, $output, "Unsuccessful");
-    }
-    $success = false;
-}
 
 if ($txStatus->error) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
@@ -119,7 +186,7 @@ if ($success) {
 
     header('Location: '.$invoice_url);
 } else {
-    die($txStatus->error);
+    die($txStatus->error . ' ; ' . $txStatus->status);
 }
 
 function verifyTransaction($trxref, $secretKey)
