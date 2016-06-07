@@ -122,7 +122,7 @@ function paystack_link($params)
         ));
 
     $code = '
-    <form target="hiddenIFrame">
+    <form target="hiddenIFrame" action="about:blank">
         <script src="https://js.paystack.co/v1/inline.js"></script>
         <script>
             // load jQuery 1.12.3 if not loaded
