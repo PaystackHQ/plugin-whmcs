@@ -124,6 +124,7 @@ function paystack_link($params)
     $code = '
     <form target="hiddenIFrame" action="about:blank">
         <script src="https://js.paystack.co/v1/inline.js"></script>
+        <div class="payment-btn-container2"></div>
         <script>
             // load jQuery 1.12.3 if not loaded
             (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" '.
@@ -163,11 +164,11 @@ function paystack_link($params)
             } else {
               paystackHandler.openIframe();
               paystackIframeOpened = true;
-              $(\'.payment-btn-container\').append(\'<button type="button"'. 
+              $(\'.payment-btn-container2\').append(\'<button type="button"'. 
                 ' onclick="payWithPaystack()">Pay with ATM Card</button>\');
             }
        }
-       ' . ( $paynowload ? '' : 'setTimeout("payWithPaystack()", 5100);' ) . '
+       ' . ( $paynowload ? 'setTimeout("payWithPaystack()", 5100);' : '' ) . '
     </script>';
 
     return $code;
