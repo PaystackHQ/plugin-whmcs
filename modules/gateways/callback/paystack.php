@@ -52,10 +52,9 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
     $phone = filter_input(INPUT_GET, 'phone');
 
     $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
-        $_SERVER['REQUEST_URI'] . '?invoiceid=' . rawurlencode($invoiceId);
+        $_SERVER['SCRIPT_NAME'] . '?invoiceid=' . rawurlencode($invoiceId);
 
     $txStatus = new stdClass();
-
     // set url
     curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/initialize/");
 
