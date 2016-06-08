@@ -63,7 +63,8 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
         $ch,
         CURLOPT_HTTPHEADER,
         array(
-        'Authorization: Bearer '. trim($secretKey)
+        'Authorization: Bearer '. trim($secretKey),
+        'Content-Type: application/json'
         )
     );
 
@@ -72,7 +73,7 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
     curl_setopt(
         $ch,
         CURLOPT_POSTFIELDS,
-        http_build_query(
+        json_encode(
             array(
             "amount"=>$amountinkobo,
             "email"=>$email,
