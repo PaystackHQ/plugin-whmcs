@@ -154,7 +154,6 @@ function paystack_link($params)
           },
           onClose: function(){
               paystackIframeOpened = false;
-              alert(\'Payment Cancelled. Click on the "Pay" button to try again.\');
           }
         });
         function payWithPaystack(){
@@ -165,6 +164,8 @@ function paystack_link($params)
             } else {
               paystackHandler.openIframe();
               paystackIframeOpened = true;
+              $(\'img[alt="Loading"]\').hide();
+              $(\'div.alert.alert-info.text-center\').html(\'Click the button below to retry payment...\');
               $(\'.payment-btn-container2\').append(\'<button type="button"'. 
                 ' onclick="payWithPaystack()">Pay with ATM Card</button>\');
             }
