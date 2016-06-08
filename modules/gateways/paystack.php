@@ -134,6 +134,7 @@ function paystack_link($params)
             $(function() {
                 var paymentMethod = $(\'select[name="gateway"]\').val();
                 if (paymentMethod === \'paystack\') {
+                    $(\'.payment-btn-container2\').hide();
                     $(\'.payment-btn-container\').append(\'<button type="button"'. 
                    ' onclick="payWithPaystack()"> Pay with ATM Card</button>\');
                 }
@@ -149,7 +150,7 @@ function paystack_link($params)
           phone: \''.addslashes(trim($phone)).'\',
           amount: '.$amountinkobo.',
           callback: function(response){
-            window.location.href = \''.addslashes($callbackUrl).'\';
+            window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
           },
           onClose: function(){
               paystackIframeOpened = false;
