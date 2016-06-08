@@ -156,7 +156,7 @@ function paystack_link($params)
           }
         });
         function payWithPaystack(){
-            If (paystackHandler.fallback || paystackIframeOpened) {
+            if (paystackHandler.fallback || paystackIframeOpened) {
               // Handle non-support of iframes or
               // Being able to click PayWithPaystack even though iframe already open
               window.location.href = \''.addslashes($fallbackUrl).'\';
