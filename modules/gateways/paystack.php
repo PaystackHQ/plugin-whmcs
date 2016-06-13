@@ -28,7 +28,7 @@ function paystack_config()
     return array(
         'FriendlyName' => array(
             'Type' => 'System',
-            'Value' => 'Credit/Debit Cards (Powered by Paystack)'
+            'Value' => 'Paystack (Debit/Credit Cards)'
         ),
         'gatewayLogs' => array(
             'FriendlyName' => 'Gateway logs',
