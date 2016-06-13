@@ -135,8 +135,12 @@ function paystack_link($params)
                 var paymentMethod = $(\'select[name="gateway"]\').val();
                 if (paymentMethod === \'paystack\') {
                     $(\'.payment-btn-container2\').hide();
-                    $(\'.payment-btn-container\').append(\'<button type="button"'. 
-                   ' onclick="payWithPaystack()"> Pay with ATM Card</button>\');
+                    var toAppend = \'<button type="button"'. 
+                   ' onclick="payWithPaystack()"> Pay with ATM Card</button>\';
+                    $(\'.payment-btn-container\').append(toAppend);
+                   if($(\'.payment-btn-container\').length===0){
+                     $(\'select[name="gateway"]\').after(toAppend);
+                   }
                 }
             });
         </script>
