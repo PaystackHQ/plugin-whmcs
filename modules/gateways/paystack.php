@@ -81,6 +81,9 @@ function paystack_link($params)
     // Client
     $email = $params['clientdetails']['email'];
     $phone = $params['clientdetails']['phonenumber'];
+    $params['langpaynow'] = 
+        array_key_exists('langpaynow', $params) ? 
+            $params['langpaynow'] : 'Pay with ATM' ;
 
     // Config Options
     if ($params['testMode'] == 'on') {
@@ -136,7 +139,7 @@ function paystack_link($params)
                 if (paymentMethod === \'paystack\') {
                     $(\'.payment-btn-container2\').hide();
                     var toAppend = \'<button type="button"'. 
-                   ' onclick="payWithPaystack()"> Pay with ATM Card</button>\';
+                   ' onclick="payWithPaystack()"> '.addslashes($params['langpaynow']).'</button>\';
                     $(\'.payment-btn-container\').append(toAppend);
                    if($(\'.payment-btn-container\').length===0){
                      $(\'select[name="gateway"]\').after(toAppend);
@@ -171,7 +174,7 @@ function paystack_link($params)
               $(\'img[alt="Loading"]\').hide();
               $(\'div.alert.alert-info.text-center\').html(\'Click the button below to retry payment...\');
               $(\'.payment-btn-container2\').append(\'<button type="button"'. 
-                ' onclick="payWithPaystack()">Pay with ATM Card</button>\');
+                ' onclick="payWithPaystack()">'.addslashes($params['langpaynow']).'</button>\');
             }
        }
        ' . ( $paynowload ? 'setTimeout("payWithPaystack()", 5100);' : '' ) . '
