@@ -163,6 +163,16 @@ if ($success) {
      */
     $invoiceId = checkCbInvoiceID($invoiceId, $gatewayModuleName);
 
+    $amount = floatval($txStatus->amount)/100;
+    if ($gatewayParams['convertto']) {
+        $result = select_query("tblclients", "tblinvoices.invoicenum,tblclients.currency,tblcurrencies.code", array("tblinvoices.id" => $invoiceId), "", "", "", "tblinvoices ON tblinvoices.userid=tblclients.id INNER JOIN tblcurrencies ON tblcurrencies.id=tblclients.currency");
+        $data = mysql_fetch_array($result);
+        $invoice_currency_id = $data['currency'];
+
+        $converto_amount = convertCurrency($amount, $gatewayParams['convertto'], $invoice_currency_id);
+        $amount = format_as_currency($converto_amount);
+    }
+
     /**
      * Add Invoice Payment.
      *
@@ -174,7 +184,7 @@ if ($success) {
      * @param float $paymentFee      Payment fee (optional)
      * @param string $gatewayModule  Gateway module name
      */
-    addInvoicePayment($invoiceId, $trxref, floatval($txStatus->amount)/100, 0, $gatewayModuleName);
+    addInvoicePayment($invoiceId, $trxref, $amount, 0, $gatewayModuleName);
 
     // load invoice
     $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
