@@ -163,6 +163,16 @@ if ($success) {
      */
     $invoiceId = checkCbInvoiceID($invoiceId, $gatewayModuleName);
 
+    /**
+     * Check Callback Transaction ID.
+     *
+     * Performs a check for any existing transactions with the same given
+     * transaction number.
+     *
+     * Performs a die upon encountering a duplicate.
+     */
+    checkCbTransID($trxref);
+
     $amount = floatval($txStatus->amount)/100;
     if ($gatewayParams['convertto']) {
         $result = select_query("tblclients", "tblinvoices.invoicenum,tblclients.currency,tblcurrencies.code", array("tblinvoices.id" => $invoiceId), "", "", "", "tblinvoices ON tblinvoices.userid=tblclients.id INNER JOIN tblcurrencies ON tblcurrencies.id=tblclients.currency");
