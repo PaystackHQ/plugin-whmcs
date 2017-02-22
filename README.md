@@ -17,9 +17,9 @@ A plugin that allows WHMCS users accept payments using Paystack
 you are done with configuration and have successfully made a test payment.
 
 ## Install
-1. Copy [paystack.php](modules/gateways/paystack.php) in [modules/gateways](modules/gateways) to the `/modules/gateways/` folder of your WHMCS installation.
+1. Copy [paystack.php](modules/gateways/paystack.php?raw=true) in [modules/gateways](modules/gateways) to the `/modules/gateways/` folder of your WHMCS installation.
 
-2. Copy [paystack.php](modules/gateways/callback/paystack.php) in [modules/gateways/callback](modules/gateways/callback) to the `/modules/gateways/callback` folder of your WHMCS installation.
+2. Copy [paystack.php](modules/gateways/callback/paystack.php?raw=true) in [modules/gateways/callback](modules/gateways/callback) to the `/modules/gateways/callback` folder of your WHMCS installation.
 
 ## I'm ready!
 
