@@ -32,6 +32,8 @@ if (!$gatewayParams['type']) {
 
 // Retrieve data returned in payment gateway callback
 $invoiceId = filter_input(INPUT_GET, "invoiceid");
+$txnref         = $invoiceId . '_' .time();
+
 $trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {
@@ -77,6 +79,7 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
             "amount"=>$amountinkobo,
             "email"=>$email,
             "phone"=>$phone,
+            "reference" => $txnref,
             "callback_url"=>$callback_url
             )
         )

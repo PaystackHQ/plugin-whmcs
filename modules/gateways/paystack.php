@@ -101,6 +101,9 @@ function paystack_link($params)
     $invoiceId = $params['invoiceid'];
     $amountinkobo = intval(floatval($params['amount'])*100);
     $currency = $params['currency'];
+    ///Transaction_reference
+    $txnref         = $invoiceId . '_' .time();
+
 
     if (!(strtoupper($currency) == 'NGN')) {
         return ("Paystack only accepts NGN payments for now.");
@@ -114,6 +117,7 @@ function paystack_link($params)
             'invoiceid'=>$invoiceId,
             'email'=>$email,
             'phone'=>$phone,
+            'reference' => $txnref,
             'amountinkobo'=>$amountinkobo,
             'go'=>'standard'
         ));
@@ -156,6 +160,7 @@ function paystack_link($params)
           email: \''.addslashes(trim($email)).'\',
           phone: \''.addslashes(trim($phone)).'\',
           amount: '.$amountinkobo.',
+          ref:'.$txnref.',
           callback: function(response){
             window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
           },
