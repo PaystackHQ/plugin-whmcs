@@ -122,6 +122,44 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
         die($txStatus->error);
     }
 }
+// if ((strtoupper($_SERVER['REQUEST_METHOD']) != 'POST' ) || !array_key_exists('HTTP_X_PAYSTACK_SIGNATURE', $_SERVER) ) {
+//     exit();
+// }
+$input = @file_get_contents("php://input");
+$event = json_decode($input);
+if (isset($event->event)) {
+   // echo "<pre>";
+    // print_r($event);
+    if(!$_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] || ($_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] !== hash_hmac('sha512', $input, $secretKey))){
+      exit();
+    }
+    switch($event->event){
+        case 'subscription.create':
+
+            break;
+        case 'subscription.disable':
+            break;
+        case 'charge.success':
+            $trxref = $event->data->reference;
+            $order_details  = explode( '_', $trxref);
+            $invoiceId       = (int) $order_details[0];
+
+            // $morder =  new MemberOrder();
+            // $morder->getMembershipLevel();
+            // $morder->getUser();
+            // $morder->Gateway->pmpro_pages_shortcode_confirmation('',$event->data->reference);
+            break;
+        case 'invoice.create':
+            // self::renewpayment($event);
+        case 'invoice.update':
+            // self::renewpayment($event);
+            
+            break;
+    }
+    http_response_code(200);
+    // exit();
+}
+
 /**
  * Verify Paystack transaction.
  */
@@ -257,3 +295,10 @@ function verifyTransaction($trxref, $secretKey)
 
     return $txStatus;
 }
+
+
+
+
+
+
+
