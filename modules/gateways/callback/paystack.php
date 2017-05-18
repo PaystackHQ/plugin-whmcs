@@ -3,8 +3,8 @@
 / ********************************************************************* \
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 1.0.0                                                     *
- *   Build Date: 15 May 2016                                            *
+ *   Version: 1.0.1                                                    *
+ *   Build Date: 18 May 2017                                            *
  *                                                                      *
  ************************************************************************
  *                                                                      *
@@ -129,10 +129,10 @@ $input = @file_get_contents("php://input");
 $event = json_decode($input);
 if (isset($event->event)) {
    // echo "<pre>";
-    // print_r($event);
     if(!$_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] || ($_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] !== hash_hmac('sha512', $input, $secretKey))){
       exit();
     }
+
     switch($event->event){
         case 'subscription.create':
 
@@ -144,19 +144,17 @@ if (isset($event->event)) {
             $order_details  = explode( '_', $trxref);
             $invoiceId       = (int) $order_details[0];
 
-            // $morder =  new MemberOrder();
-            // $morder->getMembershipLevel();
-            // $morder->getUser();
-            // $morder->Gateway->pmpro_pages_shortcode_confirmation('',$event->data->reference);
             break;
         case 'invoice.create':
-            // self::renewpayment($event);
+           // Recurring payments
         case 'invoice.update':
-            // self::renewpayment($event);
+           // Recurring payments
             
             break;
     }
     http_response_code(200);
+
+    
     // exit();
 }
 
@@ -164,7 +162,7 @@ if (isset($event->event)) {
  * Verify Paystack transaction.
  */
 $txStatus = verifyTransaction($trxref, $secretKey);
-
+ 
 if ($txStatus->error) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
@@ -193,6 +191,8 @@ if ($txStatus->error) {
 }
 
 if ($success) {
+    // print_r($txStatus);
+    // die();
     /**
      * Validate Callback Invoice ID.
      *
