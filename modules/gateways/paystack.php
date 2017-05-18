@@ -3,8 +3,8 @@
  ** ***************************************************************** **\
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 1.0.0                                                     *
- *   Build Date: 15 May 2016                                            *
+ *   Version: 1.0.1                                                    *
+ *   Build Date: 18 May 2017                                            *
  *                                                                      *
  ************************************************************************
  *                                                                      *
@@ -24,11 +24,22 @@ if (!defined("WHMCS")) {
  * @return array
  */
 function paystack_config()
-{
+{   
+    $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
+    $callbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+        substr($_SERVER['SERVER_NAME'], 0, strrpos($_SERVER['SERVER_NAME'], '/')) .
+        '/modules/gateways/callback/paystack.php';
+    
     return array(
         'FriendlyName' => array(
             'Type' => 'System',
             'Value' => 'Paystack (Debit/Credit Cards)'
+        ),
+        'webhook' => array(
+            'FriendlyName' => 'Webhook URL',
+            'Type' => 'yesno',
+            'Description' => 'Copy and paste this URL on your Webhook URL settings <code>'.$callbackUrl.'</code>',
+            'Default' => "'".$callbackUrl."'",
         ),
         'gatewayLogs' => array(
             'FriendlyName' => 'Gateway logs',
@@ -101,6 +112,9 @@ function paystack_link($params)
     $invoiceId = $params['invoiceid'];
     $amountinkobo = intval(floatval($params['amount'])*100);
     $currency = $params['currency'];
+    ///Transaction_reference
+    $txnref         = $invoiceId . '_' .time();
+
 
     if (!(strtoupper($currency) == 'NGN')) {
         return ("Paystack only accepts NGN payments for now.");
@@ -114,6 +128,7 @@ function paystack_link($params)
             'invoiceid'=>$invoiceId,
             'email'=>$email,
             'phone'=>$phone,
+            'reference' => $txnref,
             'amountinkobo'=>$amountinkobo,
             'go'=>'standard'
         ));
@@ -156,6 +171,7 @@ function paystack_link($params)
           email: \''.addslashes(trim($email)).'\',
           phone: \''.addslashes(trim($phone)).'\',
           amount: '.$amountinkobo.',
+          ref:\''.$txnref.'\',
           callback: function(response){
             window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
           },

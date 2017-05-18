@@ -3,8 +3,8 @@
 / ********************************************************************* \
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 1.0.0                                                     *
- *   Build Date: 15 May 2016                                            *
+ *   Version: 1.0.1                                                    *
+ *   Build Date: 18 May 2017                                            *
  *                                                                      *
  ************************************************************************
  *                                                                      *
@@ -32,6 +32,8 @@ if (!$gatewayParams['type']) {
 
 // Retrieve data returned in payment gateway callback
 $invoiceId = filter_input(INPUT_GET, "invoiceid");
+$txnref         = $invoiceId . '_' .time();
+
 $trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {
@@ -77,6 +79,7 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
             "amount"=>$amountinkobo,
             "email"=>$email,
             "phone"=>$phone,
+            "reference" => $txnref,
             "callback_url"=>$callback_url
             )
         )
@@ -119,11 +122,47 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
         die($txStatus->error);
     }
 }
+// if ((strtoupper($_SERVER['REQUEST_METHOD']) != 'POST' ) || !array_key_exists('HTTP_X_PAYSTACK_SIGNATURE', $_SERVER) ) {
+//     exit();
+// }
+$input = @file_get_contents("php://input");
+$event = json_decode($input);
+if (isset($event->event)) {
+   // echo "<pre>";
+    if(!$_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] || ($_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] !== hash_hmac('sha512', $input, $secretKey))){
+      exit();
+    }
+
+    switch($event->event){
+        case 'subscription.create':
+
+            break;
+        case 'subscription.disable':
+            break;
+        case 'charge.success':
+            $trxref = $event->data->reference;
+            $order_details  = explode( '_', $trxref);
+            $invoiceId       = (int) $order_details[0];
+
+            break;
+        case 'invoice.create':
+           // Recurring payments
+        case 'invoice.update':
+           // Recurring payments
+            
+            break;
+    }
+    http_response_code(200);
+
+    
+    // exit();
+}
+
 /**
  * Verify Paystack transaction.
  */
 $txStatus = verifyTransaction($trxref, $secretKey);
-
+ 
 if ($txStatus->error) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
@@ -152,6 +191,8 @@ if ($txStatus->error) {
 }
 
 if ($success) {
+    // print_r($txStatus);
+    // die();
     /**
      * Validate Callback Invoice ID.
      *
@@ -254,3 +295,10 @@ function verifyTransaction($trxref, $secretKey)
 
     return $txStatus;
 }
+
+
+
+
+
+
+
