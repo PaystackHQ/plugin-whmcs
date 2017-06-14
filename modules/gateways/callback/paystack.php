@@ -1,4 +1,6 @@
-<?php
+<?php register_shutdown_function( 'paystackshutdownFunction'); 
+        
+
 /**
 / ********************************************************************* \
  *                                                                      *
@@ -189,8 +191,19 @@ if ($txStatus->error) {
     }
     $success = false;
 }
+function paystackshutdownFunction(){
+    $invoiceId = filter_input(INPUT_GET, "invoiceid");
+    $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
+        
+    $invoice_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
+        substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
+        '/../../../viewinvoice.php?id='.
+        rawurlencode($invoiceId);
 
+    header('Location: '.$invoice_url);
+}
 if ($success) {
+
     // print_r($txStatus);
     // die();
     /**
