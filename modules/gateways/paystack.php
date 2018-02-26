@@ -118,7 +118,7 @@ function paystack_link($params)
 
 
     if (!(strtoupper($currency) == 'NGN')) {
-        return ("Paystack only accepts NGN payments for now.");
+        return ("<b style='color:red;margin:2px;padding:2px;border:1px dotted;display: block;border-radius: 10px;font-size: 13px;'>Sorry, this version of the Paystack WHMCS plugin only accepts NGN payments. <i>$currency</i> not yet supported.</b>");
     }
     
     $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
