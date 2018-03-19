@@ -1,12 +1,12 @@
 <?php
 /**
- ** ***************************************************************** **\
+ * ****************************************************************** **\
  *                                                                      *
  *   Paystack Payment Gateway                                           *
  *   Version: 1.0.1                                                    *
  *   Build Date: 18 May 2017                                            *
  *                                                                      *
- ************************************************************************
+ * **********************************************************************
  *                                                                      *
  *   Email: support@paystack.com                                        *
  *   Website: https://www.paystack.com                                  *
@@ -27,8 +27,8 @@ function paystack_config()
 {   
     $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
     $callbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
-//         substr($_SERVER['SERVER_NAME'], 0, strrpos($_SERVER['SERVER_NAME'], '/')) . '/'
-        substr(str_replace('/admin/','/',$_SERVER['REQUEST_URI']), 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
+    //substr($_SERVER['SERVER_NAME'], 0, strrpos($_SERVER['SERVER_NAME'], '/')) . '/'
+        substr(str_replace('/admin/', '/', $_SERVER['REQUEST_URI']), 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
         '/modules/gateways/callback/paystack.php';
     
     return array(
@@ -93,8 +93,8 @@ function paystack_link($params)
     // Client
     $email = $params['clientdetails']['email'];
     $phone = $params['clientdetails']['phonenumber'];
-    $params['langpaynow'] = 
-        array_key_exists('langpaynow', $params) ? 
+    $params['langpaynow'] 
+        = array_key_exists('langpaynow', $params) ? 
             $params['langpaynow'] : 'Pay with ATM' ;
 
     // Config Options
@@ -117,28 +117,32 @@ function paystack_link($params)
     $txnref         = $invoiceId . '_' .time();
 
 
-    if (!(strtoupper($currency) == 'NGN')) {
-        return ("<b style='color:red;margin:2px;padding:2px;border:1px dotted;display: block;border-radius: 10px;font-size: 13px;'>Sorry, this version of the Paystack WHMCS plugin only accepts NGN payments. <i>$currency</i> not yet supported.</b>");
+    if (!(strtoupper($currency) == 'NGN') || !(strtoupper($currency) == 'USD') || !(strtoupper($currency) == 'GHS') ) {
+        return ("<b style='color:red;margin:2px;padding:2px;border:1px dotted;display: block;border-radius: 10px;font-size: 13px;'>Sorry, this version of the Paystack WHMCS plugin only accepts NGN, USD and GHS payments. <i>$currency</i> not yet supported.</b>");
     }
     
     $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
     $fallbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
         substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
         '/modules/gateways/callback/paystack.php?' . 
-        http_build_query(array(
-            'invoiceid'=>$invoiceId,
+        http_build_query(
+            array(
+            'invoiceid' =>$invoiceId,
             'email'=>$email,
             'phone'=>$phone,
             'reference' => $txnref,
             'amountinkobo'=>$amountinkobo,
             'go'=>'standard'
-        ));
+            )
+        );
     $callbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
         substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
         '/modules/gateways/callback/paystack.php?' . 
-        http_build_query(array(
+        http_build_query(
+            array(
             'invoiceid'=>$invoiceId
-        ));
+            )
+        );
 
     $code = '
     <form target="hiddenIFrame" action="about:blank">
@@ -171,7 +175,8 @@ function paystack_link($params)
           key: \''.addslashes(trim($publicKey)).'\',
           email: \''.addslashes(trim($email)).'\',
           phone: \''.addslashes(trim($phone)).'\',
-          amount: '.$amountinkobo.',
+          amount: '.$amountinkobo * 100 .',
+          currency: \''.addslashes(trim($currency)).'\',
           ref:\''.$txnref.'\',
           callback: function(response){
             window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
