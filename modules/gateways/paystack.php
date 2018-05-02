@@ -162,10 +162,15 @@ function paystack_link($params)
                 if (paymentMethod === \'paystack\') {
                     $(\'.payment-btn-container2\').hide();
                     var toAppend = \'<button type="button"'. 
-                   ' onclick="payWithPaystack()"> '.addslashes($params['langpaynow']).'</button>\';
+                   ' onclick="payWithPaystack()"'.
+                   ' style="padding: 10px 25px; margin: 10px;border-radius: 5px;background: #021C32; color:#fff">'.
+                    addslashes($params['langpaynow']).'</button>'.
+                    '<img style="width: 150px; display: block; margin: 0 auto;"'.
+                    ' src="https://paystack.com/assets/website/images/brand/badges/cards.png"/>\';
+
                     $(\'.payment-btn-container\').append(toAppend);
-                   if($(\'.payment-btn-container\').length===0){
-                     $(\'select[name="gateway"]\').after(toAppend);
+                    if($(\'.payment-btn-container\').length===0){
+                        $(\'select[name="gateway"]\').after(toAppend);
                    }
                 }
             });
@@ -174,33 +179,44 @@ function paystack_link($params)
     <div class="hidden" style="display:none"><iframe name="hiddenIFrame"></iframe></div>
     <script>
         var paystackIframeOpened = false;
+        var button_created = false;
         var paystackHandler = PaystackPop.setup({
-          key: \''.addslashes(trim($publicKey)).'\',
-          email: \''.addslashes(trim($email)).'\',
-          phone: \''.addslashes(trim($phone)).'\',
-          amount: '.$amountinkobo * 100 .',
-          currency: \''.addslashes(trim($currency)).'\',
-          ref:\''.$txnref.'\',
-          callback: function(response){
-            window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
-          },
-          onClose: function(){
-              paystackIframeOpened = false;
-          }
+            key: \''.addslashes(trim($publicKey)).'\',
+            email: \''.addslashes(trim($email)).'\',
+            phone: \''.addslashes(trim($phone)).'\',
+            amount: '.$amountinkobo.',
+            currency: \''.addslashes(trim($currency)).'\',
+            ref:\''.$txnref.'\',
+            callback: function(response){
+                window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
+            },
+            onClose: function(){
+                paystackIframeOpened = false;
+            }
         });
         function payWithPaystack(){
             if (paystackHandler.fallback || paystackIframeOpened) {
-              // Handle non-support of iframes or
-              // Being able to click PayWithPaystack even though iframe already open
-              window.location.href = \''.addslashes($fallbackUrl).'\';
+                // Handle non-support of iframes or
+                // Being able to click PayWithPaystack even though iframe already open
+                window.location.href = \''.addslashes($fallbackUrl).'\';
             } else {
-              paystackHandler.openIframe();
-              paystackIframeOpened = true;
-              $(\'img[alt="Loading"]\').hide();
-              $(\'div.alert.alert-info.text-center\').html(\'Click the button below to retry payment...\');
-              $(\'.payment-btn-container2\').append(\'<button type="button"'. 
-                ' onclick="payWithPaystack()">'.addslashes($params['langpaynow']).'</button>\');
+                paystackHandler.openIframe();
+                paystackIframeOpened = true;
+                $(\'img[alt="Loading"]\').hide();
+                $(\'div.alert.alert-info.text-center\').html(\'Click the button below to retry payment...\');
+                create_button();
             }
+       }
+       function create_button(){
+        if(!button_created){
+            button_created = true;
+            $(\'.payment-btn-container2\').append(\'<button type="button"'. 
+                ' onclick="payWithPaystack()"'.
+                ' style="padding: 10px 25px; margin: 10px;border-radius: 5px;background: #021C32; color:#fff">'.
+                addslashes($params['langpaynow']).'</button>'.
+                '<img style="width: 150px; display: block; margin: 0 auto;"'.
+                ' src="https://paystack.com/assets/website/images/brand/badges/cards.png"/>\');
+        }
        }
        ' . ( $paynowload ? 'setTimeout("payWithPaystack()", 5100);' : '' ) . '
     </script>';
