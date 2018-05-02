@@ -117,10 +117,7 @@ function paystack_link($params)
     $txnref         = $invoiceId . '_' .time();
 
 
-    if (!  (strtoupper($currency) == 'NGN') 
-        || (strtoupper($currency) == 'USD') 
-        || (strtoupper($currency) == 'GHS')
-    ) {
+    if (!in_array(strtoupper($currency), [ 'NGN', 'USD', 'GHS' ])) {
         return ("<b style='color:red;margin:2px;padding:2px;border:1px dotted;display: block;border-radius: 10px;font-size: 13px;'>Sorry, this version of the Paystack WHMCS plugin only accepts NGN, USD and GHS payments. <i>$currency</i> not yet supported.</b>");
     }
     
