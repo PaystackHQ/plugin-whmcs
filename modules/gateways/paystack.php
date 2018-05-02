@@ -211,7 +211,7 @@ function paystack_link($params)
         if(!button_created){
             button_created = true;
             $(\'.payment-btn-container2\').append(\'<button type="button"'. 
-                ' onclick="payWithPaystack()"'.
+                ' onClick="window.location.reload()"'.
                 ' style="padding: 10px 25px; margin: 10px;border-radius: 5px;background: #021C32; color:#fff">'.
                 addslashes($params['langpaynow']).'</button>'.
                 '<img style="width: 150px; display: block; margin: 0 auto;"'.
