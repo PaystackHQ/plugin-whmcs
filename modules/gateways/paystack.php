@@ -185,6 +185,9 @@ function paystack_link($params)
             currency: \''.addslashes(trim($currency)).'\',
             ref:\''.$txnref.'\',
             callback: function(response){
+                $(\'div.alert.alert-info.text-center\').hide();
+                $(\'.payment-btn-container2\').hide();
+                
                 window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
             },
             onClose: function(){
@@ -214,7 +217,7 @@ function paystack_link($params)
                 '<img style="width: 150px; display: block; margin: 0 auto;"'.
                 ' src="https://paystack.com/assets/website/images/brand/badges/cards.png"/>\');
         }
-       }
+       }     
        ' . ( $paynowload ? 'setTimeout("payWithPaystack()", 5100);' : '' ) . '
     </script>';
 
