@@ -186,7 +186,7 @@ if (isset($event->event)) {
             $trxref = $event->data->reference;
             
             //PSTK Logger
-            
+
             if ($gatewayParams['testMode'] == 'on') {
                 $pk = $gatewayParams['testPublicKey'];
             } else {
@@ -236,6 +236,21 @@ if ($txStatus->error) {
             . "\r\nInvoice ID: " . $invoiceId
             . "\r\nStatus: succeeded";
         logTransaction($gatewayModuleName, $output, "Successful");
+
+             
+            //PSTK Logger
+            
+            if ($gatewayParams['testMode'] == 'on') {
+                $pk = $gatewayParams['testPublicKey'];
+            } else {
+                $pk = $gatewayParams['livePublicKey'];
+            }
+            $pstk_logger_ = new whmcs_paystack_plugin_tracker('whmcs',$pk );
+            $pstk_logger_->log_transaction_success($trxref);
+
+
+            //-------------------------------------
+
     }
     $success = true;
 } else {
