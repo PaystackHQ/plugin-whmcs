@@ -5,7 +5,7 @@
 / ********************************************************************* \
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 1.0.1                                                    *
+ *   Version: 1.0.1                                                     *
  *   Build Date: 18 May 2017                                            *
  *                                                                      *
  ************************************************************************
@@ -15,6 +15,46 @@
  *                                                                      *
 \ ********************************************************************* /
 **/
+
+
+class whmcs_paystack_plugin_tracker {
+    var $public_key;
+    var $plugin_name;
+    function __construct($plugin, $pk){
+        //configure plugin name
+        //configure public key
+        $this->plugin_name = $plugin;
+        $this->public_key = $pk;
+    }
+
+   
+
+    function log_transaction_success($trx_ref){
+        //send reference to logger along with plugin name and public key
+        $url = "https://plugin-tracker.paystackintegrations.com/log/charge_success";
+
+        $fields = [
+            'plugin_name'  => $this->plugin_name,
+            'transaction_reference' => $trx_ref,
+            'public_key' => $this->public_key
+        ];
+
+        $fields_string = http_build_query($fields);
+
+        $ch = curl_init();
+
+        curl_setopt($ch,CURLOPT_URL, $url);
+        curl_setopt($ch,CURLOPT_POST, true);
+        curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true); 
+
+        //execute post
+        $result = curl_exec($ch);
+        //  echo $result;
+    }
+}
+
 
 // Require libraries needed for gateway module functions.
 require_once __DIR__ . '/../../../init.php';
@@ -142,7 +182,23 @@ if (isset($event->event)) {
         case 'subscription.disable':
             break;
         case 'charge.success':
+
             $trxref = $event->data->reference;
+            
+            //PSTK Logger
+
+            if ($gatewayParams['testMode'] == 'on') {
+                $pk = $gatewayParams['testPublicKey'];
+            } else {
+                $pk = $gatewayParams['livePublicKey'];
+            }
+            $pstk_logger = new whmcs_paystack_plugin_tracker('whmcs',$pk );
+            $pstk_logger->log_transaction_success($trxref);
+
+
+            //-------------------------------------
+
+
             $order_details  = explode( '_', $trxref);
             $invoiceId       = (int) $order_details[0];
 
@@ -180,6 +236,21 @@ if ($txStatus->error) {
             . "\r\nInvoice ID: " . $invoiceId
             . "\r\nStatus: succeeded";
         logTransaction($gatewayModuleName, $output, "Successful");
+
+             
+            //PSTK Logger
+            
+            if ($gatewayParams['testMode'] == 'on') {
+                $pk = $gatewayParams['testPublicKey'];
+            } else {
+                $pk = $gatewayParams['livePublicKey'];
+            }
+            $pstk_logger_ = new whmcs_paystack_plugin_tracker('whmcs',$pk );
+            $pstk_logger_->log_transaction_success($trxref);
+
+
+            //-------------------------------------
+
     }
     $success = true;
 } else {

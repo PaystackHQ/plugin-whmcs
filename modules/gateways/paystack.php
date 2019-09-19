@@ -184,6 +184,15 @@ function paystack_link($params)
             amount: '.$amountinkobo.',
             currency: \''.addslashes(trim($currency)).'\',
             ref:\''.$txnref.'\',
+            metadata:{
+                "custom_fields":[
+                  {
+                    "display_name":"Plugin",
+                    "variable_name":"plugin",
+                    "value":"whmcs"
+                  }
+                ]
+              },
             callback: function(response){
                 $(\'div.alert.alert-info.text-center\').hide();
                 $(\'.payment-btn-container2\').hide();
