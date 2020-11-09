@@ -1,3 +1,7 @@
+## 2.2.0 (November 06, 2020)
+
+- Add ZAR to supported currencies
+
 ## 1.0.1 (June 13, 2016)
 
 - [fix] Add logic to avoid duplication of payment verification
