@@ -1,6 +1,6 @@
 ## 2.2.0 (November 06, 2020)
 
-- [Feat] Add ZAR to supported currencies
+- Add ZAR to supported currencies
 
 ## 1.0.1 (June 13, 2016)
 
