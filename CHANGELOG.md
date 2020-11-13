@@ -1,3 +1,7 @@
+## 2.2.1 (November 13, 2020)
+
+- Fix broken payment options image link
+  
 ## 2.2.0 (November 06, 2020)
 
 - Add ZAR to supported currencies
