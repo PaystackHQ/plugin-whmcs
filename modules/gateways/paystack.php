@@ -163,7 +163,7 @@ function paystack_link($params)
                    ' style="padding: 10px 25px; margin: 10px;border-radius: 5px;background: #021C32; color:#fff">'.
                     addslashes($params['langpaynow']).'</button>'.
                     '<img style="width: 150px; display: block; margin: 0 auto;"'.
-                    ' src="https://paystack.com/assets/website/images/brand/badges/cards.png"/>\';
+                    ' src="https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC8yYVwvMTQxNzczXC9wcm9qZWN0c1wvMTc4NjE0XC9hc3NldHNcLzdmXC8yNzQ2ODcxXC83NDY5OGViODMzMzhlMWJiNjVhMDk4MTYwNjkzY2FlOC0xNTQwMDM5NjA0LnBuZyJ9:cloud:YYqwtVK3Tb8KMGeFiXCl_w9flKcsEY9D022GMOK9oFc"/>\';
 
                     $(\'.payment-btn-container\').append(toAppend);
                     if($(\'.payment-btn-container\').length===0){
@@ -224,7 +224,7 @@ function paystack_link($params)
                 ' style="padding: 10px 25px; margin: 10px;border-radius: 5px;background: #021C32; color:#fff">'.
                 addslashes($params['langpaynow']).'</button>'.
                 '<img style="width: 150px; display: block; margin: 0 auto;"'.
-                ' src="https://paystack.com/assets/website/images/brand/badges/cards.png"/>\');
+                ' src="https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC8yYVwvMTQxNzczXC9wcm9qZWN0c1wvMTc4NjE0XC9hc3NldHNcLzdmXC8yNzQ2ODcxXC83NDY5OGViODMzMzhlMWJiNjVhMDk4MTYwNjkzY2FlOC0xNTQwMDM5NjA0LnBuZyJ9:cloud:YYqwtVK3Tb8KMGeFiXCl_w9flKcsEY9D022GMOK9oFc"/>\');
         }
        }     
        ' . ( $paynowload ? 'setTimeout("payWithPaystack()", 5100);' : '' ) . '
