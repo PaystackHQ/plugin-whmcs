@@ -117,8 +117,8 @@ function paystack_link($params)
     $txnref         = $invoiceId . '_' .time();
 
 
-    if (!in_array(strtoupper($currency), [ 'NGN', 'USD', 'GHS', 'ZAR' ])) {
-        return ("<b style='color:red;margin:2px;padding:2px;border:1px dotted;display: block;border-radius: 10px;font-size: 13px;'>Sorry, this version of the Paystack WHMCS plugin only accepts NGN, USD, GHS, and ZAR payments. <i>$currency</i> not yet supported.</b>");
+    if (!in_array(strtoupper($currency), [ 'NGN', 'USD', 'GHS', 'ZAR', 'EGP', 'XOF', 'KES', 'RWF' ])) {
+        return ("<b style='color:red;margin:2px;padding:2px;border:1px dotted;display: block;border-radius: 10px;font-size: 13px;'>Sorry, this version of the Paystack WHMCS plugin only accepts NGN, USD, GHS, ZAR, EGP, XOF, KES, and RWF payments. <i>$currency</i> not yet supported.</b>");
     }
     
     $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
