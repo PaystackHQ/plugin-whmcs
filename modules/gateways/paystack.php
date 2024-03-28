@@ -3,7 +3,7 @@
  * ****************************************************************** **\
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 1.0.1                                                    *
+ *   Version: 1.0.1                                                     *
  *   Build Date: 18 May 2017                                            *
  *                                                                      *
  * **********************************************************************
@@ -146,7 +146,7 @@ function paystack_link($params)
 
     $code = '
     <form target="hiddenIFrame" action="about:blank">
-        <script src="https://js.paystack.co/v1/inline.js"></script>
+        <script src="https://js.paystack.co/v2/inline.js"></script>
         <div class="payment-btn-container2"></div>
         <script>
             // load jQuery 1.12.3 if not loaded
@@ -175,9 +175,9 @@ function paystack_link($params)
     </form>
     <div class="hidden" style="display:none"><iframe name="hiddenIFrame"></iframe></div>
     <script>
-        var paystackIframeOpened = false;
         var button_created = false;
-        var paystackHandler = PaystackPop.setup({
+        var paystackPop  = new PaystackPop()
+        paystackPop.checkout({
             key: \''.addslashes(trim($publicKey)).'\',
             email: \''.addslashes(trim($email)).'\',
             phone: \''.addslashes(trim($phone)).'\',
@@ -193,29 +193,20 @@ function paystack_link($params)
                   }
                 ]
               },
-            callback: function(response){
+            onSuccess: function(response){
                 $(\'div.alert.alert-info.text-center\').hide();
                 $(\'.payment-btn-container2\').hide();
                 
                 window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
             },
-            onClose: function(){
-                paystackIframeOpened = false;
+            onCancel: function(){
             }
         });
+
         function payWithPaystack(){
-            if (paystackHandler.fallback || paystackIframeOpened) {
-                // Handle non-support of iframes or
-                // Being able to click PayWithPaystack even though iframe already open
-                window.location.href = \''.addslashes($fallbackUrl).'\';
-            } else {
-                paystackHandler.openIframe();
-                paystackIframeOpened = true;
-                $(\'img[alt="Loading"]\').hide();
-                $(\'div.alert.alert-info.text-center\').html(\'Click the button below to retry payment...\');
-                create_button();
-            }
-       }
+            paystackPop
+        }
+
        function create_button(){
         if(!button_created){
             button_created = true;
