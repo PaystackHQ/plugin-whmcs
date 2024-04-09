@@ -299,6 +299,8 @@ if ($success) {
     checkCbTransID($trxref);
 
     $amount = floatval($txStatus->amount)/100;
+    $requested_amount = floatval($txStatus->requested_amount)/100;
+    if (isset($requested_amount) && $requested_amount > 0) $amount = $requested_amount
     $fees = floatval($txStatus->fees)/100;
     if ($gatewayParams['convertto']) {
         $result = select_query("tblclients", "tblinvoices.invoicenum,tblclients.currency,tblcurrencies.code", array("tblinvoices.id" => $invoiceId), "", "", "", "tblinvoices ON tblinvoices.userid=tblclients.id INNER JOIN tblcurrencies ON tblcurrencies.id=tblclients.currency");
