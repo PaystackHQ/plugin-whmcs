@@ -177,34 +177,33 @@ function paystack_link($params)
     <script>
         var button_created = false;
         var paystackPop  = new PaystackPop()
-        paystackPop.checkout({
-            key: \''.addslashes(trim($publicKey)).'\',
-            email: \''.addslashes(trim($email)).'\',
-            phone: \''.addslashes(trim($phone)).'\',
-            amount: '.$amountinkobo.',
-            currency: \''.addslashes(trim($currency)).'\',
-            ref:\''.$txnref.'\',
-            metadata:{
-                "custom_fields":[
-                  {
-                    "display_name":"Plugin",
-                    "variable_name":"plugin",
-                    "value":"whmcs"
-                  }
-                ]
-              },
-            onSuccess: function(response){
-                $(\'div.alert.alert-info.text-center\').hide();
-                $(\'.payment-btn-container2\').hide();
-                
-                window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
-            },
-            onCancel: function(){
-            }
-        });
 
         function payWithPaystack(){
-            paystackPop
+            paystackPop.checkout({
+                key: \''.addslashes(trim($publicKey)).'\',
+                email: \''.addslashes(trim($email)).'\',
+                phone: \''.addslashes(trim($phone)).'\',
+                amount: '.$amountinkobo.',
+                currency: \''.addslashes(trim($currency)).'\',
+                ref:\''.$txnref.'\',
+                metadata:{
+                    "custom_fields":[
+                      {
+                        "display_name":"Plugin",
+                        "variable_name":"plugin",
+                        "value":"whmcs"
+                      }
+                    ]
+                  },
+                onSuccess: function(response){
+                    $(\'div.alert.alert-info.text-center\').hide();
+                    $(\'.payment-btn-container2\').hide();
+                    
+                    window.location.href = \''.addslashes($callbackUrl).'&trxref=\' + response.trxref;
+                },
+                onCancel: function(){
+                }
+            });
         }
 
        function create_button(){
