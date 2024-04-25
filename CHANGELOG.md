@@ -1,3 +1,11 @@
+## 2.3.0 (April 25, 2024)
+
+- Upgraded to Paystack inlinejs v2
+- Added support for Apple pay
+- Included fees in the payment data
+- Added support for merchants who pass charges to customers
+- Bug fixes
+
 ## 2.2.1 (November 13, 2020)
 
 - Fix broken payment options image link
