@@ -95,7 +95,7 @@ function paystack_link($params)
     $phone = $params['clientdetails']['phonenumber'];
     $params['langpaynow']
         = array_key_exists('langpaynow', $params) ?
-        $params['langpaynow'] : 'Pay with ATM';
+        $params['langpaynow'] : 'Pay with Paystack';
 
     // Config Options
     if ($params['testMode'] == 'on') {
