@@ -79,13 +79,13 @@ $txnref         = $invoiceId . '_' .time();
 $trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {
-    $secretKey = $gatewayParams['testSecretKey'];
+    $secretKey = (string) ($gatewayParams['testSecretKey'] ?? '');
 } else {
-    $secretKey = $gatewayParams['liveSecretKey'];
+    $secretKey = (string) ($gatewayParams['liveSecretKey'] ?? '');
 }
 
 
-if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
+if(strtolower((string) filter_input(INPUT_GET, 'go'))==='standard'){
     // falling back to standard
     $ch = curl_init();
 
@@ -96,7 +96,7 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
     $phone = filter_input(INPUT_GET, 'phone');
 
     $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
-        $_SERVER['SCRIPT_NAME'] . '?invoiceid=' . rawurlencode($invoiceId);
+        $_SERVER['SCRIPT_NAME'] . '?invoiceid=' . rawurlencode((string) $invoiceId);
 
     $txStatus = new stdClass();
     // set url
@@ -136,22 +136,19 @@ if(strtolower(filter_input(INPUT_GET, 'go'))==='standard'){
     if (curl_errno($ch)) {
         // curl ended with an error
         $txStatus->error = "cURL said:" . curl_error($ch);
-        curl_close($ch);
     } else {
-        //close connection
-        curl_close($ch);
 
         // Then, after your curl_exec call:
         $body = json_decode($response);
-        if (!$body->status) {
+        if (empty($body->status) || !is_object($body->data ?? null)) {
             // paystack has an error message for us
-            $txStatus->error = "Paystack API said: " . $body->message;
+            $txStatus->error = "Paystack API said: " . ($body->message ?? 'invalid response');
         } else {
             // get body returned by Paystack API
             $txStatus = $body->data;
         }
     }
-    if(!$txStatus->error){
+    if(empty($txStatus->error)){
         header('Location: ' . $txStatus->authorization_url);
         die('<meta http-equiv="refresh" content="0;url='.$txStatus->authorization_url.'" />
         Redirecting to <a href=\''.$txStatus->authorization_url.'\'>'.$txStatus->authorization_url.'</a>...');
@@ -171,7 +168,8 @@ $input = @file_get_contents("php://input");
 $event = json_decode($input);
 if (isset($event->event)) {
    // echo "<pre>";
-    if(!$_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] || ($_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] !== hash_hmac('sha512', $input, $secretKey))){
+    $signature = $_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
+    if(!$signature || !hash_equals(hash_hmac('sha512', $input, $secretKey), $signature)){
       exit();
     }
 
@@ -188,9 +186,9 @@ if (isset($event->event)) {
             //PSTK Logger
 
             if ($gatewayParams['testMode'] == 'on') {
-                $pk = $gatewayParams['testPublicKey'];
+                $pk = (string) ($gatewayParams['testPublicKey'] ?? '');
             } else {
-                $pk = $gatewayParams['livePublicKey'];
+                $pk = (string) ($gatewayParams['livePublicKey'] ?? '');
             }
             $pstk_logger = new whmcs_paystack_plugin_tracker('whmcs',$pk );
             $pstk_logger->log_transaction_success($trxref);
@@ -221,7 +219,7 @@ if (isset($event->event)) {
  */
 $txStatus = verifyTransaction($trxref, $secretKey);
  
-if ($txStatus->error) {
+if (!empty($txStatus->error)) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
             . "\r\nInvoice ID: " . $invoiceId
@@ -230,7 +228,7 @@ if ($txStatus->error) {
         logTransaction($gatewayModuleName, $output, "Unsuccessful");
     }
     $success = false;
-} elseif ($txStatus->status == 'success') {
+} elseif (($txStatus->status ?? '') == 'success') {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
             . "\r\nInvoice ID: " . $invoiceId
@@ -241,9 +239,9 @@ if ($txStatus->error) {
             //PSTK Logger
             
             if ($gatewayParams['testMode'] == 'on') {
-                $pk = $gatewayParams['testPublicKey'];
+                $pk = (string) ($gatewayParams['testPublicKey'] ?? '');
             } else {
-                $pk = $gatewayParams['livePublicKey'];
+                $pk = (string) ($gatewayParams['livePublicKey'] ?? '');
             }
             $pstk_logger_ = new whmcs_paystack_plugin_tracker('whmcs',$pk );
             $pstk_logger_->log_transaction_success($trxref);
@@ -257,7 +255,7 @@ if ($txStatus->error) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
             . "\r\nInvoice ID: " . $invoiceId
-            . "\r\nStatus: {$txStatus->status}";
+            . "\r\nStatus: " . ($txStatus->status ?? '');
         logTransaction($gatewayModuleName, $output, "Unsuccessful");
     }
     $success = false;
@@ -269,9 +267,12 @@ function paystackshutdownFunction(){
     $invoice_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
         substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
         '/../../../viewinvoice.php?id='.
-        rawurlencode($invoiceId);
+        rawurlencode((string) $invoiceId);
 
-    header('Location: '.$invoice_url);
+    // Output (an error message, or the redirect page) may already have been sent
+    if (!headers_sent()) {
+        header('Location: '.$invoice_url);
+    }
 }
 if ($success) {
 
@@ -298,17 +299,20 @@ if ($success) {
      */
     checkCbTransID($trxref);
 
-    $amount = floatval($txStatus->amount)/100;
-    $requested_amount = floatval($txStatus->requested_amount)/100;
+    $amount = floatval($txStatus->amount ?? 0)/100;
+    $requested_amount = floatval($txStatus->requested_amount ?? 0)/100;
     if (isset($requested_amount) && $requested_amount > 0) 
     {
         $amount = $requested_amount;
     }
-    $fees = floatval($txStatus->fees)/100;
+    $fees = floatval($txStatus->fees ?? 0)/100;
     if ($gatewayParams['convertto']) {
-        $result = select_query("tblclients", "tblinvoices.invoicenum,tblclients.currency,tblcurrencies.code", array("tblinvoices.id" => $invoiceId), "", "", "", "tblinvoices ON tblinvoices.userid=tblclients.id INNER JOIN tblcurrencies ON tblcurrencies.id=tblclients.currency");
-        $data = mysql_fetch_array($result);
-        $invoice_currency_id = $data['currency'];
+        // mysql_* functions were removed in PHP 7; use WHMCS's database layer instead
+        $invoice_currency_id = \WHMCS\Database\Capsule::table('tblinvoices')
+            ->join('tblclients', 'tblinvoices.userid', '=', 'tblclients.id')
+            ->join('tblcurrencies', 'tblcurrencies.id', '=', 'tblclients.currency')
+            ->where('tblinvoices.id', $invoiceId)
+            ->value('tblclients.currency');
 
         $converto_amount = convertCurrency($amount, $gatewayParams['convertto'], $invoice_currency_id);
         $converto_fees = convertCurrency($fees, $gatewayParams['convertto'], $invoice_currency_id);
@@ -336,11 +340,11 @@ if ($success) {
     $invoice_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
         substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
         '/../../../viewinvoice.php?id='.
-        rawurlencode($invoiceId);
+        rawurlencode((string) $invoiceId);
 
     header('Location: '.$invoice_url);
 } else {
-    die($txStatus->error . ' ; ' . $txStatus->status);
+    die(($txStatus->error ?? '') . ' ; ' . ($txStatus->status ?? ''));
 }
 
 function verifyTransaction($trxref, $secretKey)
@@ -349,7 +353,7 @@ function verifyTransaction($trxref, $secretKey)
     $txStatus = new stdClass();
 
     // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . rawurlencode($trxref));
+    curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . rawurlencode((string) $trxref));
 
     curl_setopt(
         $ch,
@@ -370,16 +374,13 @@ function verifyTransaction($trxref, $secretKey)
     if (curl_errno($ch)) {
         // curl ended with an error
         $txStatus->error = "cURL said:" . curl_error($ch);
-        curl_close($ch);
     } else {
-        //close connection
-        curl_close($ch);
 
         // Then, after your curl_exec call:
         $body = json_decode($response);
-        if (!$body->status) {
+        if (empty($body->status) || !is_object($body->data ?? null)) {
             // paystack has an error message for us
-            $txStatus->error = "Paystack API said: " . $body->message;
+            $txStatus->error = "Paystack API said: " . ($body->message ?? 'invalid response');
         } else {
             // get body returned by Paystack API
             $txStatus = $body->data;
