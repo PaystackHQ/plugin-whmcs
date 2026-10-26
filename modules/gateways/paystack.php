@@ -99,11 +99,11 @@ function paystack_link($params)
 
     // Config Options
     if ($params['testMode'] == 'on') {
-        $publicKey = $params['testPublicKey'];
-        $secretKey = $params['testSecretKey'];
+        $publicKey = (string) ($params['testPublicKey'] ?? '');
+        $secretKey = (string) ($params['testSecretKey'] ?? '');
     } else {
-        $publicKey = $params['livePublicKey'];
-        $secretKey = $params['liveSecretKey'];
+        $publicKey = (string) ($params['livePublicKey'] ?? '');
+        $secretKey = (string) ($params['liveSecretKey'] ?? '');
     }
 
     // check if there is an id in the GET meaning the invoice was loaded directly
@@ -181,8 +181,8 @@ function paystack_link($params)
         function payWithPaystack(){
             paystackPop.checkout({
                 key: \'' . addslashes(trim($publicKey)) . '\',
-                email: \'' . addslashes(trim($email)) . '\',
-                phone: \'' . addslashes(trim($phone)) . '\',
+                email: \'' . addslashes(trim((string) $email)) . '\',
+                phone: \'' . addslashes(trim((string) $phone)) . '\',
                 amount: ' . $amountinkobo . ',
                 currency: \'' . addslashes(trim($currency)) . '\',
                 ref:\'' . $txnref . '\',
