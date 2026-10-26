@@ -11,7 +11,8 @@ Here you can browse the source code, look at open issues and keep track of devel
 
 - Existing WHMCS installation on your web server.
 - Supported Web Servers: Apache and Nginx
-- PHP (5.5.19 or more recent) and extensions, MySQL and web browser
+- PHP with the 21 Oct 2026 security fixes for critical remote code execution flaws (GHSA-w8hw-w9fx-j79w, GHSA-6wmf-4rv5-p3rp; [php.net advisory](https://www.php.net/releases/8_2_35.php)): **8.2.35, 8.3.36, 8.4.27, 8.5.12 or later**. Pick a version your WHMCS release supports. PHP 8.1 and older no longer receive security fixes, so if your WHMCS release can't run a patched PHP, upgrade WHMCS first.
+- PHP extensions required by WHMCS, MySQL and a web browser
 - cURL (7.34.0 or more recent)
 - OpenSSL v1.0.1 or more recent
 
