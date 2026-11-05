@@ -58,6 +58,7 @@ function paystack_config()
             'FriendlyName' => 'Live Secret Key',
             'Type' => 'text',
             'Size' => '32',
+            'Description' => 'Your secret key (sk_live_...) or a restricted key (rk_live_...)',
             'Default' => 'sk_live_xxx'
         ),
         'livePublicKey' => array(
@@ -66,10 +67,17 @@ function paystack_config()
             'Size' => '32',
             'Default' => 'pk_live_xxx'
         ),
+        'liveWebhookSecret' => array(
+            'FriendlyName' => 'Live Webhook Signing Secret',
+            'Type' => 'text',
+            'Size' => '32',
+            'Description' => 'Starts with whsec_. Create it on the Paystack Dashboard under Settings > API Keys & Webhooks. Required once you use a restricted key (rk_live_...) instead of a secret key.'
+        ),
         'testSecretKey' => array(
             'FriendlyName' => 'Test Secrect Key',
             'Type' => 'text',
             'Size' => '32',
+            'Description' => 'Your secret key (sk_test_...) or a restricted key (rk_test_...)',
             'Default' => 'sk_test_xxx'
         ),
         'testPublicKey' => array(
@@ -77,6 +85,12 @@ function paystack_config()
             'Type' => 'text',
             'Size' => '32',
             'Default' => 'pk_test_xxx'
+        ),
+        'testWebhookSecret' => array(
+            'FriendlyName' => 'Test Webhook Signing Secret',
+            'Type' => 'text',
+            'Size' => '32',
+            'Description' => 'Starts with whsec_. Create it on the Paystack Dashboard under Settings > API Keys & Webhooks. Required once you use a restricted key (rk_test_...) instead of a secret key.'
         )
     );
 }
