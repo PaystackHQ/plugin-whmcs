@@ -25,7 +25,20 @@ you are done with configuration and have successfully made a test payment.
 ### Install
 1. Copy [paystack.php](modules/gateways/paystack.php?raw=true) in [modules/gateways](modules/gateways) to the `/modules/gateways/` folder of your WHMCS installation.
 
-2. Copy [paystack.php](modules/gateways/callback/paystack.php?raw=true) in [modules/gateways/callback](modules/gateways/callback) to the `/modules/gateways/callback` folder of your WHMCS installation.
+2. Copy the [paystack](modules/gateways/paystack) folder in [modules/gateways](modules/gateways) to the `/modules/gateways/` folder of your WHMCS installation. When upgrading, copy this folder too, otherwise the restricted-key checks are skipped.
+
+3. Copy [paystack.php](modules/gateways/callback/paystack.php?raw=true) in [modules/gateways/callback](modules/gateways/callback) to the `/modules/gateways/callback` folder of your WHMCS installation.
+
+### Using a restricted key
+
+You can use a restricted key (`rk_`) instead of your secret key (`sk_`):
+
+- On the Paystack Dashboard, go to **Developers > API configuration** and click **Create restricted key**. Give it only **Transactions: read**. The listed money-moving permissions (Transactions: write, refunds, transfers, settlements, etc.) are refused, because the plugin never needs them.
+- Use the public key from the same integration and mode: `rk_test_` with `pk_test_` in the Test fields, and `rk_live_` with `pk_live_` in the Live fields.
+- On the same page, click **Generate signing secret** and paste the `whsec_` value into the matching Webhook Signing Secret field. Without it, Paystack webhooks are ignored and payments are confirmed only when the customer returns to your site.
+- Roll your secret key afterwards.
+
+The key is checked with Paystack when you save, on WHMCS versions that support save-time validation. If Paystack can't be reached to check the key, you can save with your `sk_` secret key instead. Problems at payment time are written to the Gateway Log, even when Gateway logs is off.
 
 ## Documentation
 
