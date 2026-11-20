@@ -80,8 +80,10 @@ $trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {
     $secretKey = (string) ($gatewayParams['testSecretKey'] ?? '');
+    $webhookSecret = trim((string) ($gatewayParams['testWebhookSecret'] ?? ''));
 } else {
     $secretKey = (string) ($gatewayParams['liveSecretKey'] ?? '');
+    $webhookSecret = trim((string) ($gatewayParams['liveWebhookSecret'] ?? ''));
 }
 
 
@@ -168,8 +170,7 @@ $input = @file_get_contents("php://input");
 $event = json_decode($input);
 if (isset($event->event)) {
    // echo "<pre>";
-    $signature = $_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
-    if(!$signature || !hash_equals(hash_hmac('sha512', $input, $secretKey), $signature)){
+    if (!isPaystackWebhookAuthentic($input, $webhookSecret, $secretKey, $_SERVER, time())) {
       exit();
     }
 
@@ -345,6 +346,45 @@ if ($success) {
     header('Location: '.$invoice_url);
 } else {
     die(($txStatus->error ?? '') . ' ; ' . ($txStatus->status ?? ''));
+}
+
+function isPaystackWebhookAuthentic($input, $webhookSecret, $secretKey, $server, $now)
+{
+    if ($webhookSecret !== '' && isset($server['HTTP_PAYSTACK_SIGNATURE'])) {
+        return verifyPaystackSignature($server['HTTP_PAYSTACK_SIGNATURE'], $input, $webhookSecret, $now);
+    }
+    $legacySignature = $server['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
+    if (strpos($secretKey, 'sk_') === 0 && $legacySignature !== '') {
+        return hash_equals(hash_hmac('sha512', $input, $secretKey), $legacySignature);
+    }
+    return false;
+}
+
+function verifyPaystackSignature($header, $input, $webhookSecret, $now)
+{
+    $timestamp = null;
+    $signatures = array();
+    foreach (explode(',', $header) as $part) {
+        $pair = explode('=', trim($part), 2);
+        if (count($pair) !== 2) {
+            continue;
+        }
+        if ($pair[0] === 't') {
+            $timestamp = $pair[1];
+        } elseif ($pair[0] === 'v1' && strpos($pair[1], ':') !== false) {
+            $signatures[] = substr($pair[1], strpos($pair[1], ':') + 1);
+        }
+    }
+    if ($timestamp === null || !ctype_digit($timestamp) || abs($now - (int) $timestamp) > 300) {
+        return false;
+    }
+    $expected = hash_hmac('sha512', $timestamp . '.' . $input, $webhookSecret);
+    foreach ($signatures as $signature) {
+        if (hash_equals($expected, $signature)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function verifyTransaction($trxref, $secretKey)
