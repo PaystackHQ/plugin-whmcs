@@ -5,8 +5,8 @@
 / ********************************************************************* \
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 2.3.0                                                     *
- *   Build Date: April 25, 2024                                           *
+ *   Version: 2.4.0                                                     *
+ *   Build Date: November 18, 2026                                         *
  *                                                                      *
  ************************************************************************
  *                                                                      *
@@ -61,6 +61,12 @@ require_once __DIR__ . '/../../../init.php';
 require_once __DIR__ . '/../../../includes/gatewayfunctions.php';
 require_once __DIR__ . '/../../../includes/invoicefunctions.php';
 
+$paystackRkFile = __DIR__ . '/../paystack/RestrictedKey.php';
+if (!defined('PAYSTACK_RK_VERSION') && is_file($paystackRkFile)) {
+    require_once $paystackRkFile;
+}
+$rkLoaded = defined('PAYSTACK_RK_VERSION');
+
 // Detect module name from filename.
 $gatewayModuleName = basename(__FILE__, '.php');
 
@@ -74,93 +80,19 @@ if (!$gatewayParams['type']) {
 
 // Retrieve data returned in payment gateway callback
 $invoiceId = filter_input(INPUT_GET, "invoiceid");
-$txnref         = $invoiceId . '_' .time();
 
 $trxref = filter_input(INPUT_GET, "trxref");
 
 if ($gatewayParams['testMode'] == 'on') {
-    $secretKey = (string) ($gatewayParams['testSecretKey'] ?? '');
+    $secretKey = trim((string) ($gatewayParams['testSecretKey'] ?? ''));
+    $webhookSecret = trim((string) ($gatewayParams['testWebhookSecret'] ?? ''));
 } else {
-    $secretKey = (string) ($gatewayParams['liveSecretKey'] ?? '');
+    $secretKey = trim((string) ($gatewayParams['liveSecretKey'] ?? ''));
+    $webhookSecret = trim((string) ($gatewayParams['liveWebhookSecret'] ?? ''));
 }
+$keyType = $rkLoaded ? paystackRkKeyType($secretKey) : 'unknown';
 
 
-if(strtolower((string) filter_input(INPUT_GET, 'go'))==='standard'){
-    // falling back to standard
-    $ch = curl_init();
-
-    $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
-    
-    $amountinkobo = filter_input(INPUT_GET, 'amountinkobo');
-    $email = filter_input(INPUT_GET, 'email');
-    $phone = filter_input(INPUT_GET, 'phone');
-
-    $callback_url = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
-        $_SERVER['SCRIPT_NAME'] . '?invoiceid=' . rawurlencode((string) $invoiceId);
-
-    $txStatus = new stdClass();
-    // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/initialize/");
-
-    curl_setopt(
-        $ch,
-        CURLOPT_HTTPHEADER,
-        array(
-        'Authorization: Bearer '. trim($secretKey),
-        'Content-Type: application/json'
-        )
-    );
-
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt(
-        $ch,
-        CURLOPT_POSTFIELDS,
-        json_encode(
-            array(
-            "amount"=>$amountinkobo,
-            "email"=>$email,
-            "phone"=>$phone,
-            "reference" => $txnref,
-            "callback_url"=>$callback_url
-            )
-        )
-    );
-    curl_setopt($ch, CURLOPT_HEADER, false);
-    curl_setopt($ch, CURLOPT_SSLVERSION, 6);
-
-    // exec the cURL
-    $response = curl_exec($ch);
-
-    // should be 0
-    if (curl_errno($ch)) {
-        // curl ended with an error
-        $txStatus->error = "cURL said:" . curl_error($ch);
-    } else {
-
-        // Then, after your curl_exec call:
-        $body = json_decode($response);
-        if (empty($body->status) || !is_object($body->data ?? null)) {
-            // paystack has an error message for us
-            $txStatus->error = "Paystack API said: " . ($body->message ?? 'invalid response');
-        } else {
-            // get body returned by Paystack API
-            $txStatus = $body->data;
-        }
-    }
-    if(empty($txStatus->error)){
-        header('Location: ' . $txStatus->authorization_url);
-        die('<meta http-equiv="refresh" content="0;url='.$txStatus->authorization_url.'" />
-        Redirecting to <a href=\''.$txStatus->authorization_url.'\'>'.$txStatus->authorization_url.'</a>...');
-    } else {
-        if ($gatewayParams['gatewayLogs'] == 'on') {
-            $output = "Transaction Initialize failed"
-                . "\r\nReason: {$txStatus->error}";
-            logTransaction($gatewayModuleName, $output, "Unsuccessful");
-        }
-        die($txStatus->error);
-    }
-}
 // if ((strtoupper($_SERVER['REQUEST_METHOD']) != 'POST' ) || !array_key_exists('HTTP_X_PAYSTACK_SIGNATURE', $_SERVER) ) {
 //     exit();
 // }
@@ -168,8 +100,19 @@ $input = @file_get_contents("php://input");
 $event = json_decode($input);
 if (isset($event->event)) {
    // echo "<pre>";
-    $signature = $_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
-    if(!$signature || !hash_equals(hash_hmac('sha512', $input, $secretKey), $signature)){
+    if (!isPaystackWebhookAuthentic($input, $webhookSecret, $secretKey, $_SERVER, time())) {
+      if ($rkLoaded && ($keyType === 'rk' || $webhookSecret !== '') && paystackRkLooksLikePaystackDelivery($_SERVER)) {
+          $dropReason = paystackRkWebhookDropReason($webhookSecret, $_SERVER, $keyType);
+          if (paystackRkThrottle('webhook_' . $dropReason)) {
+              logTransaction(
+                  $gatewayModuleName,
+                  "A request claiming to be a Paystack webhook was ignored."
+                      . "\r\nKey type: " . $keyType
+                      . "\r\nLikely cause: " . paystackRkWebhookDropMessage($dropReason),
+                  "Unsuccessful"
+              );
+          }
+      }
       exit();
     }
 
@@ -217,12 +160,26 @@ if (isset($event->event)) {
 /**
  * Verify Paystack transaction.
  */
-$txStatus = verifyTransaction($trxref, $secretKey);
- 
-if (!empty($txStatus->error)) {
+$txStatus = verifyTransaction($trxref, $secretKey, $httpCode, $rawBody);
+
+$rkProblem = ($keyType === 'rk' && !empty($txStatus->error) && (string) $trxref !== '')
+    ? paystackRkVerifyProblem($httpCode, $rawBody)
+    : '';
+
+if ($rkProblem !== '') {
+    $rkLine = "Restricted key problem on GET /transaction/verify/:ref"
+        . "\r\nKey type: rk"
+        . "\r\nReason: " . paystackRkVerifyProblemMessage($rkProblem)
+        . "\r\nInvoice ID: " . (int) $invoiceId;
+    if ($gatewayParams['gatewayLogs'] == 'on' || paystackRkThrottle('verify_' . $rkProblem)) {
+        logTransaction($gatewayModuleName, $rkLine, "Unsuccessful");
+    }
+    $success = false;
+} elseif (!empty($txStatus->error)) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
             . "\r\nInvoice ID: " . $invoiceId
+            . "\r\nKey type: " . $keyType
             . "\r\nStatus: failed"
             . "\r\nReason: {$txStatus->error}";
         logTransaction($gatewayModuleName, $output, "Unsuccessful");
@@ -232,6 +189,7 @@ if (!empty($txStatus->error)) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
             . "\r\nInvoice ID: " . $invoiceId
+            . "\r\nKey type: " . $keyType
             . "\r\nStatus: succeeded";
         logTransaction($gatewayModuleName, $output, "Successful");
 
@@ -255,6 +213,7 @@ if (!empty($txStatus->error)) {
     if ($gatewayParams['gatewayLogs'] == 'on') {
         $output = "Transaction ref: " . $trxref
             . "\r\nInvoice ID: " . $invoiceId
+            . "\r\nKey type: " . $keyType
             . "\r\nStatus: " . ($txStatus->status ?? '');
         logTransaction($gatewayModuleName, $output, "Unsuccessful");
     }
@@ -343,17 +302,70 @@ if ($success) {
         rawurlencode((string) $invoiceId);
 
     header('Location: '.$invoice_url);
+} elseif ($keyType === 'rk') {
+    die("We couldn't confirm this payment. Please contact the merchant.");
 } else {
     die(($txStatus->error ?? '') . ' ; ' . ($txStatus->status ?? ''));
 }
 
-function verifyTransaction($trxref, $secretKey)
+// Test-only override, same rule as paystackRkApiBase(); duplicated so the callback works without the support file.
+function paystackCbApiBase()
+{
+    if (defined('PAYSTACK_WHMCS_TEST_API_BASE')
+        && in_array(PHP_SAPI, array('cli', 'cli-server'), true)
+        && preg_match('~^http://127\.0\.0\.1:\d{1,5}(/|\z)~', (string) PAYSTACK_WHMCS_TEST_API_BASE) === 1
+    ) {
+        return rtrim((string) PAYSTACK_WHMCS_TEST_API_BASE, '/') . '/';
+    }
+    return 'https://api.paystack.co/';
+}
+
+function isPaystackWebhookAuthentic($input, $webhookSecret, $secretKey, $server, $now)
+{
+    if ($webhookSecret !== '' && isset($server['HTTP_PAYSTACK_SIGNATURE'])) {
+        return verifyPaystackSignature($server['HTTP_PAYSTACK_SIGNATURE'], $input, $webhookSecret, $now);
+    }
+    $legacySignature = $server['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
+    if (strpos($secretKey, 'sk_') === 0 && $legacySignature !== '') {
+        return hash_equals(hash_hmac('sha512', $input, $secretKey), $legacySignature);
+    }
+    return false;
+}
+
+function verifyPaystackSignature($header, $input, $webhookSecret, $now)
+{
+    $timestamp = null;
+    $signatures = array();
+    foreach (explode(',', $header) as $part) {
+        $pair = explode('=', trim($part), 2);
+        if (count($pair) !== 2) {
+            continue;
+        }
+        if ($pair[0] === 't') {
+            $timestamp = $pair[1];
+        } elseif ($pair[0] === 'v1' && strpos($pair[1], ':') !== false) {
+            $signatures[] = substr($pair[1], strpos($pair[1], ':') + 1);
+        }
+    }
+    if ($timestamp === null || !ctype_digit($timestamp) || abs($now - (int) $timestamp) > 300) {
+        return false;
+    }
+    $expected = hash_hmac('sha512', $timestamp . '.' . $input, $webhookSecret);
+    foreach ($signatures as $signature) {
+        if (hash_equals($expected, $signature)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function verifyTransaction($trxref, $secretKey, &$httpCode = 0, &$rawBody = '')
 {
     $ch = curl_init();
     $txStatus = new stdClass();
 
     // set url
-    curl_setopt($ch, CURLOPT_URL, "https://api.paystack.co/transaction/verify/" . rawurlencode((string) $trxref));
+    curl_setopt($ch, CURLOPT_URL, paystackCbApiBase() . "transaction/verify/" . rawurlencode((string) $trxref));
 
     curl_setopt(
         $ch,
@@ -369,6 +381,8 @@ function verifyTransaction($trxref, $secretKey)
     
     // exec the cURL
     $response = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $rawBody = is_string($response) ? $response : '';
     
     // should be 0
     if (curl_errno($ch)) {

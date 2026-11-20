@@ -3,8 +3,8 @@
  * ****************************************************************** **\
  *                                                                      *
  *   Paystack Payment Gateway                                           *
- *   Version: 2.3.0                                                     *
- *   Build Date: April 25, 2024                                            *
+ *   Version: 2.4.0                                                     *
+ *   Build Date: November 18, 2026                                          *
  *                                                                      *
  * **********************************************************************
  *                                                                      *
@@ -58,6 +58,7 @@ function paystack_config()
             'FriendlyName' => 'Live Secret Key',
             'Type' => 'text',
             'Size' => '32',
+            'Description' => 'Your secret key (sk_live_...) or a restricted key (rk_live_...) with only the Transactions: read permission, from the same integration as the public key. Roll your secret key after switching.',
             'Default' => 'sk_live_xxx'
         ),
         'livePublicKey' => array(
@@ -66,10 +67,17 @@ function paystack_config()
             'Size' => '32',
             'Default' => 'pk_live_xxx'
         ),
-        'testSecretKey' => array(
-            'FriendlyName' => 'Test Secrect Key',
+        'liveWebhookSecret' => array(
+            'FriendlyName' => 'Live Webhook Signing Secret',
             'Type' => 'text',
             'Size' => '32',
+            'Description' => 'Starts with whsec_. Create it on the Paystack Dashboard under Developers > API configuration > Webhook signing secret. Required once you use a restricted key (rk_live_...) instead of a secret key.'
+        ),
+        'testSecretKey' => array(
+            'FriendlyName' => 'Test Secret Key',
+            'Type' => 'text',
+            'Size' => '32',
+            'Description' => 'Your secret key (sk_test_...) or a restricted key (rk_test_...) with only the Transactions: read permission, from the same integration as the public key. Roll your secret key after switching.',
             'Default' => 'sk_test_xxx'
         ),
         'testPublicKey' => array(
@@ -77,8 +85,42 @@ function paystack_config()
             'Type' => 'text',
             'Size' => '32',
             'Default' => 'pk_test_xxx'
+        ),
+        'testWebhookSecret' => array(
+            'FriendlyName' => 'Test Webhook Signing Secret',
+            'Type' => 'text',
+            'Size' => '32',
+            'Description' => 'Starts with whsec_. Create it on the Paystack Dashboard under Developers > API configuration > Webhook signing secret. Required once you use a restricted key (rk_test_...) instead of a secret key.'
         )
     );
+}
+
+/**
+ * Validate restricted keys when the gateway config is saved.
+ *
+ * @param array $params Submitted gateway configuration
+ *
+ * @throws \Exception
+ */
+function paystack_config_validate(
+    #[\SensitiveParameter]
+    $params
+) {
+    $paystackRkFile = __DIR__ . '/paystack/RestrictedKey.php';
+    if (!defined('PAYSTACK_RK_VERSION') && is_file($paystackRkFile)) {
+        require_once $paystackRkFile;
+    }
+    if (!defined('PAYSTACK_RK_VERSION')) {
+        return;
+    }
+
+    $error = paystackRkCheckConfig(is_array($params) ? $params : [], 'paystackRkValidate');
+    if ($error !== null) {
+        if (class_exists('\WHMCS\Exception\Module\InvalidConfiguration')) {
+            throw new \WHMCS\Exception\Module\InvalidConfiguration($error);
+        }
+        throw new \Exception($error);
+    }
 }
 
 /**
@@ -122,19 +164,6 @@ function paystack_link($params)
     }
 
     $isSSL = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443);
-    $fallbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
-        substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
-        '/modules/gateways/callback/paystack.php?' .
-        http_build_query(
-            array(
-                'invoiceid' => $invoiceId,
-                'email' => $email,
-                'phone' => $phone,
-                'reference' => $txnref,
-                'amountinkobo' => $amountinkobo,
-                'go' => 'standard'
-            )
-        );
     $callbackUrl = 'http' . ($isSSL ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] .
         substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) .
         '/modules/gateways/callback/paystack.php?' .
